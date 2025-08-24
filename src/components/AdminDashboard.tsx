@@ -227,6 +227,7 @@ const TabContainer = styled.div`
   border-bottom: 1px solid #e9ecef;
   overflow-x: auto;
   overflow-y: hidden;
+  justify-content: center; /* PC에서 중앙 정렬 */
   
   /* 모바일에서 스크롤바 숨기기 */
   &::-webkit-scrollbar {
@@ -238,11 +239,13 @@ const TabContainer = styled.div`
   @media (max-width: 768px) {
     padding: 15px 10px 0;
     gap: 8px;
+    justify-content: flex-start; /* 모바일에서는 왼쪽 정렬 */
   }
   
   @media (max-width: 480px) {
     padding: 12px 8px 0;
     gap: 6px;
+    justify-content: flex-start; /* 모바일에서는 왼쪽 정렬 */
   }
 `;
 
@@ -261,6 +264,13 @@ const TabButton = styled.button<{ $active: boolean }>`
   position: relative;
   min-width: 100px;
   flex-shrink: 0;
+  
+  /* PC에서 더 크게 */
+  @media (min-width: 769px) {
+    padding: 25px 30px;
+    min-width: 140px;
+    gap: 12px;
+  }
   
   @media (max-width: 768px) {
     padding: 18px 16px;
@@ -300,6 +310,11 @@ const TabIcon = styled.span`
   font-size: 1.5rem;
   filter: ${props => props.color === 'white' ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' : 'none'};
   
+  /* PC에서 더 크게 */
+  @media (min-width: 769px) {
+    font-size: 2rem;
+  }
+  
   @media (max-width: 768px) {
     font-size: 1.4rem;
   }
@@ -314,6 +329,11 @@ const TabLabel = styled.span`
   font-size: 0.9rem;
   white-space: nowrap;
   text-align: center;
+  
+  /* PC에서 더 크게 */
+  @media (min-width: 769px) {
+    font-size: 1.1rem;
+  }
   
   @media (max-width: 768px) {
     font-size: 0.85rem;

@@ -1,29 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getReportedUsers } from '../services/userService';
+import { getReportedUsers, updateUserStatus, applyUserAction } from '../services/userService';
 
 const UserReportList: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserReports();
-  }, []);
+  }, [currentPage, statusFilter]);
 
   const fetchUserReports = async () => {
     try {
       setLoading(true);
-      const response = await getReportedUsers();
+      const response = await getReportedUsers({
+        page: currentPage,
+        limit: 10,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchTerm || undefined
+      });
+      
       console.log('UserReportList - API Response:', response);
-      console.log('UserReportList - response.users:', response.users);
       setReports(response.users || []);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalItems(response.pagination?.totalItems || 0);
       setError(null);
     } catch (err) {
       console.error('User reports fetch error:', err);
       setError('사용자 신고 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchUserReports();
+  };
+
+  const handleStatusChange = async (userId: string, newStatus: string) => {
+    try {
+      setActionLoading(userId);
+      await updateUserStatus(userId, newStatus, '관리자에 의한 상태 변경');
+      await fetchUserReports(); // 목록 새로고침
+    } catch (err) {
+      console.error('Status update error:', err);
+      alert('상태 변경에 실패했습니다.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAction = async (userId: string, actionType: string) => {
+    try {
+      setActionLoading(userId);
+      await applyUserAction(userId, {
+        actionType: actionType as 'warning' | 'softBlock' | 'restrictWriting' | 'permanentBan' | 'restore',
+        duration: actionType === 'softBlock' ? 7 : undefined, // 7일 일시 차단
+        reason: '관리자에 의한 조치',
+        adminId: 'current-admin' // 실제로는 로그인된 관리자 ID 사용
+      });
+      await fetchUserReports(); // 목록 새로고침
+    } catch (err) {
+      console.error('Action apply error:', err);
+      alert('조치 적용에 실패했습니다.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -57,33 +106,142 @@ const UserReportList: React.FC = () => {
         <Subtitle>신고된 사용자들의 목록을 확인하고 관리하세요</Subtitle>
       </Header>
 
+      <FilterSection>
+        <FilterGroup>
+          <FilterLabel>상태별 필터</FilterLabel>
+          <FilterSelect
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">전체</option>
+            <option value="normal">정상</option>
+            <option value="softBlocked">일시 차단</option>
+            <option value="restricted">제한됨</option>
+            <option value="banned">영구 차단</option>
+          </FilterSelect>
+        </FilterGroup>
+
+        <SearchGroup>
+          <SearchInput
+            type="text"
+            placeholder="사용자 이름 또는 ID 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <SearchButton onClick={handleSearch}>검색</SearchButton>
+        </SearchGroup>
+      </FilterSection>
+
+      <StatsBar>
+        <StatItem>
+          <StatLabel>총 사용자</StatLabel>
+          <StatValue>{totalItems}명</StatValue>
+        </StatItem>
+        <StatItem>
+          <StatLabel>현재 페이지</StatLabel>
+          <StatValue>{currentPage} / {totalPages}</StatValue>
+        </StatItem>
+      </StatsBar>
+
       {reports.length > 0 ? (
-        <ReportList>
-          {reports.map((user: any) => (
-            <ReportCard key={user.userId}>
-              <UserInfo>
-                <UserName>{user.userName || '이름 없음'}</UserName>
-                <UserStatus status={user.currentStatus || 'unknown'}>
-                  {getStatusText(user.currentStatus)}
-                </UserStatus>
-              </UserInfo>
-              <ReportDetails>
-                <DetailItem>
-                  <DetailLabel>신고 수:</DetailLabel>
-                  <DetailValue>{user.totalReports || 0}건</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>사용자 ID:</DetailLabel>
-                  <DetailValue>{user.userId}</DetailValue>
-                </DetailItem>
-              </ReportDetails>
-              <ActionButtons>
-                <ActionButton>상태 변경</ActionButton>
-                <ActionButton>상세 보기</ActionButton>
-              </ActionButtons>
-            </ReportCard>
-          ))}
-        </ReportList>
+        <>
+          <ReportList>
+            {reports.map((user: any) => (
+              <ReportCard key={user.userId}>
+                <UserInfo>
+                  <UserName>{user.userName || '이름 없음'}</UserName>
+                  <UserStatus status={user.currentStatus || 'unknown'}>
+                    {getStatusText(user.currentStatus)}
+                  </UserStatus>
+                </UserInfo>
+                <ReportDetails>
+                  <DetailItem>
+                    <DetailLabel>신고 수:</DetailLabel>
+                    <DetailValue>{user.totalReports || 0}건</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>사용자 ID:</DetailLabel>
+                    <DetailValue>{user.userId}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>최근 신고:</DetailLabel>
+                    <DetailValue>
+                      {user.recentReports?.[0]?.createdAt 
+                        ? new Date(user.recentReports[0].createdAt).toLocaleDateString()
+                        : '없음'
+                      }
+                    </DetailValue>
+                  </DetailItem>
+                </ReportDetails>
+                <ActionButtons>
+                  <ActionButton
+                    onClick={() => handleStatusChange(user.userId, 'normal')}
+                    disabled={user.currentStatus === 'normal' || actionLoading === user.userId}
+                  >
+                    {actionLoading === user.userId ? '처리중...' : '복구'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => handleAction(user.userId, 'warning')}
+                    disabled={actionLoading === user.userId}
+                  >
+                    {actionLoading === user.userId ? '처리중...' : '경고'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => handleAction(user.userId, 'softBlock')}
+                    disabled={actionLoading === user.userId}
+                  >
+                    {actionLoading === user.userId ? '처리중...' : '일시 차단'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => handleAction(user.userId, 'restrictWriting')}
+                    disabled={actionLoading === user.userId}
+                  >
+                    {actionLoading === user.userId ? '처리중...' : '작성 제한'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => handleAction(user.userId, 'permanentBan')}
+                    disabled={actionLoading === user.userId}
+                  >
+                    {actionLoading === user.userId ? '처리중...' : '영구 차단'}
+                  </ActionButton>
+                </ActionButtons>
+              </ReportCard>
+            ))}
+          </ReportList>
+
+          {totalPages > 1 && (
+            <Pagination>
+              <PageButton
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                이전
+              </PageButton>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                if (page > totalPages) return null;
+                return (
+                  <PageButton
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    $active={currentPage === page}
+                  >
+                    {page}
+                  </PageButton>
+                );
+              })}
+              
+              <PageButton
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                다음
+              </PageButton>
+            </Pagination>
+          )}
+        </>
       ) : (
         <EmptyState>
           <EmptyIcon>📝</EmptyIcon>
@@ -130,6 +288,109 @@ const Subtitle = styled.p`
   font-size: 1.1rem;
   color: #6c757d;
   margin: 0;
+`;
+
+const FilterSection = styled.div`
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: end;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 150px;
+`;
+
+const FilterLabel = styled.label`
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+`;
+
+const FilterSelect = styled.select`
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  color: #495057;
+  transition: border-color 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #ff6b35;
+  }
+`;
+
+const SearchGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-width: 300px;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #ff6b35;
+  }
+`;
+
+const SearchButton = styled.button`
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+`;
+
+const StatsBar = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  justify-content: center;
+`;
+
+const StatItem = styled.div`
+  background: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  text-align: center;
+`;
+
+const StatLabel = styled.div`
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 5px;
+`;
+
+const StatValue = styled.div`
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ff6b35;
 `;
 
 const LoadingSection = styled.div`
@@ -193,8 +454,8 @@ const RetryButton = styled.button`
 const ReportList = styled.div`
   display: grid;
   gap: 20px;
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 900px;
+  margin: 0 auto 30px auto;
 `;
 
 const ReportCard = styled.div`
@@ -263,6 +524,7 @@ const DetailValue = styled.span`
 const ActionButtons = styled.div`
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 `;
 
 const ActionButton = styled.button`
@@ -274,11 +536,47 @@ const ActionButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 0.85rem;
   
-  &:hover {
+  &:hover:not(:disabled) {
     background: #ff6b35;
     color: white;
     transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const Pagination = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+`;
+
+const PageButton = styled.button<{ $active?: boolean }>`
+  padding: 10px 15px;
+  border: 2px solid ${props => props.$active ? '#ff6b35' : '#e9ecef'};
+  background: ${props => props.$active ? '#ff6b35' : 'white'};
+  color: ${props => props.$active ? 'white' : '#495057'};
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #ff6b35;
+    background: #ff6b35;
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
