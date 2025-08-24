@@ -29,7 +29,6 @@ const ContentReportList: React.FC = () => {
         search: searchTerm || undefined
       });
       
-      console.log('ContentReportList - API Response:', response);
       setReports(response.contents || []);
       setTotalPages(response.pagination?.totalPages || 1);
       setTotalItems(response.pagination?.totalItems || 0);

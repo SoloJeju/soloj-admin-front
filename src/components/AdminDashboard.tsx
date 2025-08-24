@@ -4,6 +4,7 @@ import DashboardStats from './DashboardStats';
 import UserReportList from './UserReportList';
 import ContentReportList from './ContentReportList';
 import ReportReview from './ReportReview';
+import InquiryList from './InquiryList';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -12,7 +13,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
-    if (tabFromUrl && ['dashboard', 'users', 'content', 'review'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, []);
@@ -34,7 +35,7 @@ const AdminDashboard: React.FC = () => {
         // URL에서 탭 정보 읽기
         const urlParams = new URLSearchParams(window.location.search);
         const tabFromUrl = urlParams.get('tab');
-        if (tabFromUrl && ['dashboard', 'users', 'content', 'review'].includes(tabFromUrl)) {
+        if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management'].includes(tabFromUrl)) {
           setActiveTab(tabFromUrl);
         } else {
           setActiveTab('dashboard');
@@ -50,12 +51,14 @@ const AdminDashboard: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardStats onTabChange={handleTabChange} />;
-      case 'users':
+      case 'user-management':
         return <UserReportList />;
-      case 'content':
+      case 'content-management':
         return <ContentReportList />;
-      case 'review':
+      case 'report-list':
         return <ReportReview />;
+      case 'inquiry-management':
+        return <InquiryList />;
       default:
         return <DashboardStats onTabChange={handleTabChange} />;
     }
@@ -83,33 +86,41 @@ const AdminDashboard: React.FC = () => {
         </TabButton>
         
         <TabButton 
-          $active={activeTab === 'users'} 
-          onClick={() => handleTabChange('users')}
+          $active={activeTab === 'user-management'} 
+          onClick={() => handleTabChange('user-management')}
         >
           <TabIcon>👥</TabIcon>
           <TabLabel>신고된 사용자 관리</TabLabel>
         </TabButton>
         
         <TabButton 
-          $active={activeTab === 'content'} 
-          onClick={() => handleTabChange('content')}
+          $active={activeTab === 'content-management'} 
+          onClick={() => handleTabChange('content-management')}
         >
           <TabIcon>📝</TabIcon>
           <TabLabel>신고된 콘텐츠 관리</TabLabel>
         </TabButton>
         
         <TabButton 
-          $active={activeTab === 'review'} 
-          onClick={() => handleTabChange('review')}
+          $active={activeTab === 'report-list'} 
+          onClick={() => handleTabChange('report-list')}
         >
-          <TabIcon>🔍</TabIcon>
+          <TabIcon>🚨</TabIcon>
           <TabLabel>신고 목록 관리</TabLabel>
+        </TabButton>
+
+        <TabButton 
+          $active={activeTab === 'inquiry-management'} 
+          onClick={() => handleTabChange('inquiry-management')}
+        >
+          <TabIcon>📝</TabIcon>
+          <TabLabel>1:1 문의 관리</TabLabel>
         </TabButton>
       </TabContainer>
 
-      <ContentArea>
+      <ContentContainer>
         {renderContent()}
-      </ContentArea>
+      </ContentContainer>
     </DashboardContainer>
   );
 };
@@ -306,7 +317,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const TabIcon = styled.span`
+const TabIcon = styled.span<{ color?: string }>`
   font-size: 1.5rem;
   filter: ${props => props.color === 'white' ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' : 'none'};
   
@@ -344,7 +355,7 @@ const TabLabel = styled.span`
   }
 `;
 
-const ContentArea = styled.div`
+const ContentContainer = styled.div`
   padding: 40px;
   min-height: calc(100vh - 200px);
   

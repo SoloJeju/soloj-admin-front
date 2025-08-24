@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { adminLogin, LoginRequest } from '../services/authService';
-import { decodeJWT, getTokenInfo } from '../utils/jwtUtils';
+import { adminLogin } from '../services/authService';
 
 interface LoginProps {
-  onLoginSuccess: (token: string) => void;
+  onLoginSuccess: (token: string, adminInfo: any) => Promise<boolean>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
@@ -16,64 +15,47 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔐 Login - 폼 제출 시작:', { email, password: '***' });
-    
     if (!email || !password) {
-      setError('이메일과 비밀번호를 모두 입력해주세요.');
+      alert('이메일과 비밀번호를 모두 입력해주세요.');
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      console.log('📡 Login - API 호출 시작');
+      setLoading(true);
+      setError(null);
       
-      // API 서비스 사용
       const data = await adminLogin({ email, password });
       
-      // 응답 데이터 구조 확인 및 안전한 처리
-      console.log('✅ Login - API 응답 받음:', data); // 디버깅용
-      
-      if (!data || !data.isSuccess || !data.result?.accessToken) {
-        throw new Error(data?.message || '로그인 응답이 올바르지 않습니다.');
+      if (data && data.result && data.result.accessToken) {
+        // JWT 토큰에서 정보 추출
+        const token = data.result.accessToken;
+        const tokenInfo = JSON.parse(atob(token.split('.')[1]));
+        
+        // 관리자 정보 구성
+        const adminInfo = {
+          id: tokenInfo.userId?.toString() || '',
+          email: email,
+          name: tokenInfo.role === 'ADMIN' ? '관리자' : '사용자'
+        };
+        
+        // AuthContext를 통해 로그인 처리
+        const loginSuccess = await onLoginSuccess(token, adminInfo);
+        
+        if (loginSuccess) {
+          // 로그인 성공 시 대시보드로 이동
+          window.location.href = '/admin';
+        } else {
+          setError('로그인 처리 중 오류가 발생했습니다.');
+        }
+      } else {
+        setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
       }
-      
-      console.log('🔑 Login - JWT 토큰 파싱 시작');
-      
-      // JWT 토큰에서 사용자 정보 추출
-      const tokenInfo = getTokenInfo(data.result.accessToken);
-      if (!tokenInfo) {
-        throw new Error('토큰 정보를 읽을 수 없습니다.');
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch') {
+        setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setError(err.message || '로그인 중 오류가 발생했습니다.');
       }
-      
-      console.log('👤 Login - 토큰 정보 추출됨:', tokenInfo);
-      
-      // 관리자 정보 구성
-      const adminInfo = {
-        id: tokenInfo.userId.toString(),
-        name: `관리자 ${tokenInfo.userId}`,
-        role: tokenInfo.role.toLowerCase()
-      };
-      
-      console.log('💾 Login - localStorage에 저장 시작');
-      
-      // 토큰들을 localStorage에 저장
-      localStorage.setItem('adminToken', data.result.accessToken);
-      localStorage.setItem('refreshToken', data.result.refreshToken);
-      localStorage.setItem('adminInfo', JSON.stringify(adminInfo));
-      
-      console.log('✅ Login - localStorage 저장 완료');
-      console.log('🎯 Login - onLoginSuccess 콜백 호출 시작');
-
-      // 로그인 성공 콜백 호출
-      onLoginSuccess(data.result.accessToken);
-      
-      console.log('🎉 Login - 로그인 프로세스 완료');
-      
-    } catch (err) {
-      console.error('❌ Login - 에러 발생:', err);
-      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +70,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       name: '개발자',
       role: 'super_admin'
     }));
-    onLoginSuccess(mockToken);
+    onLoginSuccess(mockToken, {
+      id: 'admin1',
+      name: '개발자',
+      role: 'super_admin'
+    }).then(success => {
+      if (success) {
+        window.location.href = '/admin';
+      }
+    });
   };
 
   return (

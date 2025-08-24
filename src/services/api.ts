@@ -12,7 +12,6 @@ const getHeaders = () => {
 
 // 토큰 만료 시 자동 로그아웃
 const handleTokenExpiry = () => {
-  console.log('🚨 토큰 만료로 인한 자동 로그아웃 실행');
   localStorage.removeItem('adminToken');
   localStorage.removeItem('adminInfo');
   // window.location.reload() 제거 - React 상태로 처리
@@ -31,11 +30,7 @@ export const apiCall = async (
   
   const url = `${baseUrl}${endpoint}`;
   
-  // 디버깅용 로그
-  console.log('API Call URL:', url);
-  console.log('API_BASE_URL:', API_BASE_URL);
-  console.log('baseUrl (수정됨):', baseUrl);
-  console.log('endpoint:', endpoint);
+  // 디버깅용 로그 제거됨
   
   try {
     const response = await fetch(url, {
@@ -48,13 +43,11 @@ export const apiCall = async (
       
       // 로그인 요청 시에는 401 에러를 무시 (토큰이 없어서 발생하는 정상적인 상황)
       if (response.status === 401 && endpoint === '/auth/login') {
-        console.log('🔐 로그인 요청에서 401 에러 발생 (정상적인 상황)');
         throw new Error(errorData.message || `로그인 실패: ${response.status}`);
       }
       
       // 토큰 만료 시 자동 로그아웃 (로그인 요청이 아닌 경우에만)
       if (response.status === 401) {
-        console.log('🚨 토큰 만료로 인한 401 에러, 자동 로그아웃 실행');
         handleTokenExpiry();
         throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
       }
@@ -64,7 +57,6 @@ export const apiCall = async (
 
     return await response.json();
   } catch (error) {
-    console.error('API call failed:', error);
     throw error;
   }
 };

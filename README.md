@@ -1,42 +1,38 @@
-# 🚨 신고 관리 시스템 - 관리자 대시보드
+# 혼자옵서예 신고 관리 시스템
 
-여행 동행 서비스를 위한 종합적인 신고 관리 시스템의 관리자 대시보드입니다.
+제주 동행 여행을 안전하게! 혼자옵서예 신고 관리 시스템은 사용자 신고와 1:1 문의를 체계적으로 관리할 수 있는 관리자 대시보드입니다.
 
-## ✨ 주요 기능
+## 주요 기능
 
-### 📊 대시보드 통계
-- 총 신고 건수, 대기 중인 신고, 처리 완료 등 실시간 통계
-- 최근 관리자 활동 내역
-- 빠른 조치 버튼으로 다른 탭으로 즉시 이동
+### 🚨 신고 관리
+- **사용자 신고 관리**: 신고된 사용자 목록 조회, 상태 변경, 조치 적용
+- **콘텐츠 신고 관리**: 신고된 게시글/댓글 관리, 숨김/삭제 처리
+- **신고 목록 관리**: 전체 신고 내역 통합 관리 및 검토
+- **자동 조치 시스템**: 누적 신고에 따른 자동 제재 (경고, 일시차단, 영구정지)
 
-### 🔍 신고 목록 관리
-- 모든 신고 건에 대한 통합 관리
-- 상태별, 사유별, 콘텐츠 유형별 필터링
-- 검색 기능 (피신고자, 콘텐츠 제목, 신고자)
-- 페이지네이션 지원
-- 신고 상세 정보 모달
+### 📝 1:1 문의 관리
+- **문의 목록 조회**: 사용자 문의 전체 목록 및 상세 내용 확인
+- **카테고리별 분류**: 계정, 결제, 서비스, 기술, 안전, 기타 등
+- **우선순위 관리**: 긴급, 높음, 보통, 낮음 우선순위 설정
+- **상태 관리**: 대기중, 처리중, 답변완료, 종료 상태 추적
+- **관리자 답변**: 문의에 대한 상세 답변 작성 및 등록
+- **문의 할당**: 특정 관리자에게 문의 할당
 
-### 👥 사용자 관리
-- 신고된 사용자 목록 및 누적 신고 현황
-- 사용자별 조치 이력 관리
-- 경고, 임시 차단, 글쓰기 제한, 영구 정지 등 조치 적용
-- 사용자 복구 기능
+### 📊 대시보드
+- **통계 현황**: 전체 사용자, 신고, 문의 수 등 핵심 지표
+- **최근 활동**: 신고 접수, 문의 등록, 처리 완료 등 실시간 활동
+- **빠른 작업**: 주요 관리 기능으로의 빠른 이동
 
-### 📝 콘텐츠 관리
-- 신고된 게시글 및 댓글 관리
-- 콘텐츠 복구, 삭제, 임시 차단 등 조치
-- 콘텐츠별 신고 내역 상세 보기
-- 작성자 정보 및 상태 관리
-
-## 🛠️ 기술 스택
+## 기술 스택
 
 - **Frontend**: React 19 + TypeScript
 - **Styling**: Styled Components
 - **State Management**: React Hooks (useState, useEffect)
-- **API Integration**: Fetch API with custom service layer
-- **Responsive Design**: Mobile-first approach with CSS Grid/Flexbox
+- **HTTP Client**: Fetch API
+- **Authentication**: JWT (JSON Web Tokens)
+- **Responsive Design**: CSS Media Queries, Flexbox, Grid
 
-## 🚀 설치 및 실행
+## 설치 및 실행
 
 ### 1. 의존성 설치
 ```bash
@@ -46,181 +42,189 @@ npm install
 ### 2. 환경 변수 설정
 `.env` 파일을 생성하고 다음 내용을 추가하세요:
 ```env
-REACT_APP_API_URL=http://localhost:8080
-REACT_APP_ADMIN_TOKEN_KEY=adminToken
-REACT_APP_ENV=development
+REACT_APP_API_URL=http://localhost:8080/api
 ```
-
-**주의**: `.env` 파일에는 포트번호까지만 입력하고, API 요청 시 자동으로 `/api` 경로가 추가됩니다.
 
 ### 3. 개발 서버 실행
 ```bash
 npm start
 ```
 
-브라우저에서 `http://localhost:3000`으로 접속하세요.
+## 프로젝트 구조
 
-### 4. 로그인
-- 첫 화면에서 로그인 화면이 표시됩니다
-- 개발 중에는 "🚀 개발자 모드 (임시 로그인)" 버튼을 사용할 수 있습니다
-- 실제 배포 시에는 관리자 계정으로 로그인해야 합니다
-
-## 🔌 API 연동
-
-### API 서비스 구조
 ```
-src/services/
-├── api.ts              # 기본 API 설정 및 공통 함수
-├── dashboardService.ts # 대시보드 통계 API
-├── reportService.ts    # 신고 목록 API
-├── userService.ts      # 사용자 관리 API
-└── contentService.ts   # 콘텐츠 관리 API
+src/
+├── components/          # React 컴포넌트
+│   ├── AdminDashboard.tsx      # 메인 대시보드
+│   ├── DashboardStats.tsx      # 통계 및 최근 활동
+│   ├── UserReportList.tsx      # 사용자 신고 관리
+│   ├── ContentReportList.tsx   # 콘텐츠 신고 관리
+│   ├── ReportReview.tsx        # 신고 목록 관리
+│   └── InquiryList.tsx         # 1:1 문의 관리
+├── services/           # API 서비스
+│   ├── api.ts                 # 공통 API 유틸리티
+│   ├── authService.ts         # 인증 관련 API
+│   ├── dashboardService.ts    # 대시보드 API
+│   ├── reportService.ts       # 신고 관련 API
+│   ├── userService.ts         # 사용자 관리 API
+│   ├── contentService.ts      # 콘텐츠 관리 API
+│   └── inquiryService.ts      # 1:1 문의 API
+├── contexts/          # React Context
+│   └── AuthContext.tsx        # 인증 상태 관리
+├── types/             # TypeScript 타입 정의
+│   └── report.ts              # 신고 및 문의 관련 타입
+└── utils/             # 유틸리티 함수
+    └── jwtUtils.ts            # JWT 토큰 처리
 ```
 
-### 주요 API 엔드포인트
+## API 엔드포인트
 
-#### 대시보드 통계
-- `GET /api/admin/dashboard/stats` - 통계 데이터
+### 인증
+- `POST /api/auth/login` - 관리자 로그인
+
+### 대시보드
+- `GET /api/admin/dashboard/stats` - 대시보드 통계
 - `GET /api/admin/dashboard/recent-activities` - 최근 활동
 
-#### 신고 관리
-- `GET /api/admin/reports` - 신고 목록 (페이지네이션 + 필터링)
-- `GET /api/admin/reports/{id}` - 신고 상세 정보
-- `PATCH /api/admin/reports/{id}/status` - 신고 상태 변경
-
-#### 사용자 관리
+### 신고 관리
 - `GET /api/admin/users/reported` - 신고된 사용자 목록
-- `POST /api/admin/users/{id}/actions` - 사용자 조치 적용
-- `PATCH /api/admin/users/{id}/status` - 사용자 상태 변경
-
-#### 콘텐츠 관리
 - `GET /api/admin/content/reported` - 신고된 콘텐츠 목록
-- `POST /api/admin/content/{id}/actions` - 콘텐츠 조치 적용
-- `PATCH /api/admin/content/{id}/status` - 콘텐츠 상태 변경
+- `GET /api/admin/reports` - 전체 신고 목록
 
-### API 응답 형식
+### 1:1 문의 관리
+- `GET /api/admin/inquiries` - 문의 목록 조회
+- `GET /api/admin/inquiries/{id}` - 문의 상세 조회
+- `PUT /api/admin/inquiries/{id}/reply` - 문의 답변
+- `PUT /api/admin/inquiries/{id}/status` - 문의 상태 변경
+- `PUT /api/admin/inquiries/{id}/priority` - 문의 우선순위 변경
+- `PUT /api/admin/inquiries/{id}/assign` - 문의 할당
+- `GET /api/admin/inquiries/stats` - 문의 통계
 
-#### 페이지네이션 응답
-```json
-{
-  "data": [...],
-  "pagination": {
-    "currentPage": 1,
-    "totalPages": 10,
-    "totalItems": 200,
-    "hasNext": true,
-    "hasPrev": false
-  }
-}
+## 사용자 인터페이스
+
+### 🎨 디자인 특징
+- **메인 컬러**: 오렌지 계열 (#ff6b35, #f7931e)
+- **반응형 디자인**: PC, 태블릿, 모바일 모든 화면 크기 지원
+- **카드 기반 레이아웃**: 직관적이고 깔끔한 정보 표시
+- **그라데이션 요소**: 모던하고 세련된 시각적 효과
+
+### 📱 반응형 지원
+- **PC (769px 이상)**: 전체 기능과 큰 탭 버튼
+- **태블릿 (481px-768px)**: 중간 크기 UI 요소
+- **모바일 (480px 이하)**: 터치 친화적 작은 UI 요소
+
+### 🔧 사용자 경험
+- **탭 기반 네비게이션**: 직관적인 카테고리별 이동
+- **필터링 및 검색**: 빠른 데이터 찾기
+- **페이지네이션**: 대량 데이터 효율적 탐색
+- **실시간 상태 업데이트**: 즉시 반영되는 변경사항
+
+## 신고 처리 프로세스
+
+### 1. 신고 접수
+- 사용자가 신고 버튼 클릭
+- 신고 사유 선택 (스팸, 악용, 불법, 사기, 부적절, 기타)
+- 추가 설명 입력 (선택사항)
+- 신고 제출
+
+### 2. 자동 조치 규칙
+- **1-2회 신고**: 기록만 남김
+- **3-4회 신고**: 일시 차단 (7일)
+- **5-6회 신고**: 글쓰기/채팅 제한 (30일)
+- **7회 이상**: 계정 정지 (90일)
+
+### 3. 관리자 검토
+- 신고 내용 상세 검토
+- 증거 자료 확인
+- 추가 조치 결정
+- 최종 처리 완료
+
+## 1:1 문의 처리 프로세스
+
+### 1. 문의 접수
+- 사용자가 문의 작성
+- 카테고리 및 우선순위 선택
+- 제목과 내용 입력
+- 첨부파일 업로드 (선택사항)
+
+### 2. 관리자 처리
+- 문의 내용 검토
+- 우선순위 및 상태 설정
+- 담당자 할당
+- 상세 답변 작성
+
+### 3. 답변 완료
+- 사용자에게 답변 전송
+- 필요시 추가 문의 처리
+- 문의 종료 처리
+
+## 보안 및 권한
+
+### 🔐 인증 시스템
+- JWT 토큰 기반 인증
+- 자동 토큰 만료 처리
+- 보안 로그아웃
+
+### 👥 권한 관리
+- **관리자**: 모든 기능 접근 가능
+- **일반 사용자**: 신고 작성, 문의 작성만 가능
+
+### 🛡️ 보안 조치
+- API 요청 검증
+- 입력값 sanitization
+- XSS/CSRF 방지
+
+## 개발 가이드
+
+### 새로운 컴포넌트 추가
+1. `src/components/` 폴더에 컴포넌트 생성
+2. Styled Components로 스타일링
+3. TypeScript 타입 정의
+4. API 서비스 연동
+
+### API 서비스 추가
+1. `src/services/` 폴더에 서비스 파일 생성
+2. `api.ts`의 공통 함수 활용
+3. 적절한 타입 정의
+4. 에러 처리 로직 추가
+
+### 스타일 가이드
+- 메인 컬러: `#ff6b35`, `#f7931e`
+- 보조 컬러: `#28a745`, `#dc3545`, `#ffc107`
+- 중성 컬러: `#6c757d`, `#f8f9fa`, `#e9ecef`
+- 그림자: `0 2px 8px rgba(0,0,0,0.1)`
+- 둥근 모서리: `12px`, `20px`
+
+## 배포
+
+### 빌드
+```bash
+npm run build
 ```
 
-#### 에러 응답
-```json
-{
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "관리자 권한이 필요합니다.",
-    "details": {}
-  }
-}
-```
+### 환경별 설정
+- **개발**: `REACT_APP_API_URL=http://localhost:8080/api`
+- **스테이징**: `REACT_APP_API_URL=https://staging-api.example.com/api`
+- **프로덕션**: `REACT_APP_API_URL=https://api.example.com/api`
 
-## 🎨 UI/UX 특징
+## 기여하기
 
-### 디자인 테마
-- **주 색상**: 오렌지 (#ff6b35)
-- **보조 색상**: 그레이 스케일 (#2d3436, #636e72, #95a5a6)
-- **상태 색상**: 
-  - 경고: 노란색 (#ffc107)
-  - 성공: 초록색 (#28a745)
-  - 위험: 빨간색 (#dc3545)
-  - 정보: 파란색 (#17a2b8)
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### 반응형 디자인
-- 모바일, 태블릿, 데스크톱 모든 화면 크기 지원
-- CSS Grid와 Flexbox를 활용한 유연한 레이아웃
-- 터치 친화적인 버튼 크기와 간격
+## 라이선스
 
-### 사용자 경험
-- 로딩 상태 및 에러 처리
-- 실시간 데이터 업데이트
-- 직관적인 아이콘과 색상 사용
-- 부드러운 애니메이션과 전환 효과
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
 
-## 📱 컴포넌트 구조
+## 문의 및 지원
 
-```
-src/components/
-├── AdminDashboard.tsx      # 메인 대시보드 (탭 네비게이션)
-├── DashboardStats.tsx      # 통계 및 최근 활동
-├── ReportReview.tsx        # 신고 목록 관리
-├── UserReportList.tsx      # 사용자 관리
-└── ContentReportList.tsx   # 콘텐츠 관리
-```
-
-## 🔐 인증 및 권한
-
-### 로그인 시스템
-- 첫 화면에서 로그인 화면 표시
-- 아이디/비밀번호 입력 또는 개발자 모드 임시 로그인
-- 로그인 성공 시 JWT 토큰을 `localStorage`에 저장
-
-### 관리자 토큰
-- `localStorage`에 `adminToken` 저장
-- 모든 API 요청에 `Authorization: Bearer {token}` 헤더 포함
-- 토큰 만료 시 자동 로그아웃 처리
-
-### 권한 관리
-- 관리자별 조치 이력 추적
-- 조치 적용 시 관리자 ID 기록
-- 감사 로그 생성
-
-### 보안 기능
-- 로그아웃 시 토큰 및 관리자 정보 자동 삭제
-- 401 에러 시 자동 로그아웃 처리
-- 헤더에 현재 로그인한 관리자 정보 표시
-
-## 🚀 향후 개발 계획
-
-### 단기 계획
-- [ ] 실시간 알림 시스템 (WebSocket)
-- [ ] 엑셀/PDF 리포트 내보내기
-- [ ] 대량 조치 기능
-
-### 중기 계획
-- [ ] 고급 검색 및 필터링
-- [ ] 자동 조치 규칙 설정 UI
-- [ ] 통계 차트 및 그래프
-
-### 장기 계획
-- [ ] AI 기반 신고 분류
-- [ ] 예측 분석 대시보드
-- [ ] 모바일 앱 버전
-
-## 🐛 문제 해결
-
-### 일반적인 문제들
-
-#### API 연결 실패
-- `.env` 파일의 `REACT_APP_API_URL` 확인
-- 백엔드 서버 실행 상태 확인
-- 네트워크 연결 상태 확인
-
-#### 컴포넌트 렌더링 오류
-- 브라우저 콘솔에서 에러 메시지 확인
-- `npm install`로 의존성 재설치
-- 개발 서버 재시작
-
-#### 스타일 문제
-- 브라우저 캐시 삭제
-- Styled Components 버전 호환성 확인
-
-## 📞 지원 및 문의
-
-개발 관련 문의사항이나 버그 리포트는 이슈 트래커를 통해 제출해주세요.
+- **프로젝트 관리자**: 혼자옵서예 팀
+- **기술 지원**: 개발팀
+- **문의**: support@example.com
 
 ---
 
-**개발자**: AI Assistant  
-**최종 업데이트**: 2024년 1월  
-**버전**: 1.0.0
+**혼자옵서예** - 제주 동행 여행을 안전하게! 🍊

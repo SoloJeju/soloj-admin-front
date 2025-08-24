@@ -49,3 +49,82 @@ export interface ContentReportSummary {
   reports: Report[];
   status: 'visible' | 'hidden';
 }
+
+// 1:1 문의하기 관련 타입
+export interface Inquiry {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: InquiryCategory;
+  subject: string;
+  content: string;
+  status: InquiryStatus;
+  priority: InquiryPriority;
+  createdAt: string;
+  updatedAt: string;
+  adminReply?: string;
+  adminReplyAt?: string;
+  adminId?: string;
+  adminName?: string;
+  attachments?: string[];
+}
+
+export type InquiryCategory = 
+  | 'account'        // 계정 관련
+  | 'payment'        // 결제 관련
+  | 'service'        // 서비스 이용
+  | 'technical'      // 기술적 문제
+  | 'safety'         // 안전 관련
+  | 'other';         // 기타
+
+export type InquiryStatus = 
+  | 'pending'        // 대기중
+  | 'inProgress'     // 처리중
+  | 'answered'       // 답변완료
+  | 'closed';        // 종료
+
+export type InquiryPriority = 
+  | 'low'            // 낮음
+  | 'normal'         // 보통
+  | 'high'           // 높음
+  | 'urgent';        // 긴급
+
+export interface InquirySummary {
+  id: string;
+  userName: string;
+  category: InquiryCategory;
+  subject: string;
+  status: InquiryStatus;
+  priority: InquiryPriority;
+  createdAt: string;
+  hasReply: boolean;
+  replyCount: number;
+}
+
+export interface InquiryResponse {
+  inquiries: InquirySummary[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+}
+
+export interface InquiryDetailResponse {
+  inquiry: Inquiry;
+}
+
+export interface CreateInquiryRequest {
+  category: InquiryCategory;
+  subject: string;
+  content: string;
+  priority: InquiryPriority;
+  attachments?: File[];
+}
+
+export interface ReplyInquiryRequest {
+  adminReply: string;
+  status: InquiryStatus;
+}

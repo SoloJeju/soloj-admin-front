@@ -1,45 +1,52 @@
-import { apiGet } from './api';
+import { mockDashboardStats, mockRecentActivities } from './mockData';
 
 export interface DashboardStats {
+  totalUsers: number;
   totalReports: number;
+  totalContents: number;
+  totalInquiries: number;
   pendingReports: number;
+  pendingInquiries: number;
   resolvedReports: number;
-  bannedUsers: number;
-  restrictedUsers: number;
-  todayReports: number;
+  answeredInquiries: number;
 }
 
 export interface RecentActivity {
   id: string;
-  type: 'user' | 'content';
+  type: string;
   action: string;
   target: string;
-  adminId: string;
-  adminName: string;
   timestamp: string;
+  user: string;
 }
 
-export interface DashboardData {
-  stats: DashboardStats;
-  recentActivities: RecentActivity[];
-}
-
-// 대시보드 통계 조회
+// 대시보드 통계 조회 (더미 데이터 사용)
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  return apiGet('/admin/dashboard/stats');
+  // 실제 API 호출 대신 더미 데이터 반환
+  await new Promise(resolve => setTimeout(resolve, 500)); // 로딩 시뮬레이션
+  return mockDashboardStats;
 };
 
-// 최근 활동 내역 조회
+// 최근 활동 조회 (더미 데이터 사용)
 export const getRecentActivities = async (limit: number = 10): Promise<RecentActivity[]> => {
-  return apiGet('/admin/dashboard/recent-activities', { limit });
+  // 실제 API 호출 대신 더미 데이터 반환
+  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+  return mockRecentActivities.slice(0, limit);
 };
 
-// 전체 대시보드 데이터 조회
-export const getDashboardData = async (): Promise<DashboardData> => {
-  const [stats, recentActivities] = await Promise.all([
-    getDashboardStats(),
-    getRecentActivities(10)
-  ]);
-  
-  return { stats, recentActivities };
+// 대시보드 전체 데이터 조회 (더미 데이터 사용)
+export const getDashboardData = async () => {
+  try {
+    const [stats, activities] = await Promise.all([
+      getDashboardStats(),
+      getRecentActivities(10)
+    ]);
+
+    return {
+      stats,
+      activities
+    };
+  } catch (error) {
+    throw new Error('대시보드 데이터를 불러오는데 실패했습니다.');
+  }
 };

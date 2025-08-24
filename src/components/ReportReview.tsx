@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Report } from '../types/report';
-import { getReports, ReportListResponse, ReportFilters } from '../services/reportService';
+import { getReports, updateReportStatus, ReportListResponse, ReportFilters, Report } from '../services/reportService';
 
 const ReportReview: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
@@ -53,9 +52,16 @@ const ReportReview: React.FC = () => {
     fetchReports();
   };
 
-  const handleStatusChange = (reportId: string, newStatus: string) => {
-    // 상태 변경 로직 구현
-    console.log(`Report ${reportId} status changed to ${newStatus}`);
+  const handleStatusChange = async (reportId: string, newStatus: string) => {
+    try {
+      const success = await updateReportStatus(reportId, newStatus);
+      if (success) {
+        // 상태 업데이트 성공 시 목록 새로고침
+        fetchReports();
+      }
+    } catch (error) {
+      // 에러 처리
+    }
   };
 
   const getStatusColor = (status: string) => {

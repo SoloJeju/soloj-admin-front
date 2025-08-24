@@ -27,7 +27,6 @@ const UserReportList: React.FC = () => {
         search: searchTerm || undefined
       });
       
-      console.log('UserReportList - API Response:', response);
       setReports(response.users || []);
       setTotalPages(response.pagination?.totalPages || 1);
       setTotalItems(response.pagination?.totalItems || 0);

@@ -2,18 +2,29 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getDashboardData } from '../services/dashboardService';
 
+interface DashboardStats {
+  totalUsers: number;
+  totalReports: number;
+  pendingReports: number;
+  resolvedReports: number;
+  totalInquiries: number;
+  pendingInquiries: number;
+  answeredInquiries: number;
+}
+
 interface DashboardStatsProps {
   onTabChange?: (tab: string) => void;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
     totalReports: 0,
     pendingReports: 0,
     resolvedReports: 0,
-    bannedUsers: 0,
-    restrictedUsers: 0,
-    todayReports: 0
+    totalInquiries: 0,
+    pendingInquiries: 0,
+    answeredInquiries: 0
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,14 +58,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
   const handleQuickAction = (action: string) => {
     if (onTabChange) {
       switch (action) {
-        case 'review':
-          onTabChange('review');
+        case 'report-list':
+          onTabChange('report-list');
           break;
-        case 'users':
-          onTabChange('users');
+        case 'user-management':
+          onTabChange('user-management');
           break;
-        case 'content':
-          onTabChange('content');
+        case 'content-management':
+          onTabChange('content-management');
           break;
         default:
           break;
@@ -118,21 +129,21 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
         
         <StatCard danger>
           <StatIcon>🚫</StatIcon>
-          <StatNumber>{stats.bannedUsers}</StatNumber>
+          <StatNumber>{stats.totalUsers}</StatNumber>
           <StatLabel>정지된 사용자</StatLabel>
           <StatDescription>계정 정지</StatDescription>
         </StatCard>
         
         <StatCard info>
           <StatIcon>⚠️</StatIcon>
-          <StatNumber>{stats.restrictedUsers}</StatNumber>
+          <StatNumber>{stats.totalUsers - stats.totalReports}</StatNumber>
           <StatLabel>제한된 사용자</StatLabel>
           <StatDescription>일부 기능 제한</StatDescription>
         </StatCard>
         
         <StatCard highlight>
           <StatIcon>📅</StatIcon>
-          <StatNumber>{stats.todayReports}</StatNumber>
+          <StatNumber>{stats.totalReports}</StatNumber>
           <StatLabel>오늘 신고</StatLabel>
           <StatDescription>24시간 내 접수</StatDescription>
         </StatCard>
@@ -144,19 +155,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
           빠른 작업
         </SectionTitle>
         <ActionGrid>
-          <ActionCard onClick={() => handleQuickAction('review')}>
+          <ActionCard onClick={() => handleQuickAction('report-list')}>
             <ActionIcon>🔍</ActionIcon>
             <ActionTitle>신고 목록 관리</ActionTitle>
             <ActionDescription>접수된 신고들을 확인하고 처리하세요</ActionDescription>
           </ActionCard>
           
-          <ActionCard onClick={() => handleQuickAction('users')}>
+          <ActionCard onClick={() => handleQuickAction('user-management')}>
             <ActionIcon>👥</ActionIcon>
             <ActionTitle>사용자 관리</ActionTitle>
             <ActionDescription>신고된 사용자들의 상태를 관리하세요</ActionDescription>
           </ActionCard>
           
-          <ActionCard onClick={() => handleQuickAction('content')}>
+          <ActionCard onClick={() => handleQuickAction('content-management')}>
             <ActionIcon>📝</ActionIcon>
             <ActionTitle>콘텐츠 관리</ActionTitle>
             <ActionDescription>신고된 게시글과 댓글을 관리하세요</ActionDescription>
