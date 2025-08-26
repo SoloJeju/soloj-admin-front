@@ -30,7 +30,7 @@ export const apiCall = async (
   
   const url = `${baseUrl}${endpoint}`;
   
-  // 디버깅용 로그 제거됨
+  console.log('API 요청 URL:', url); // 디버깅용
   
   try {
     const response = await fetch(url, {

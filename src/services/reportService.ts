@@ -3,7 +3,10 @@ import { apiGet, apiPatch, apiPost } from './api';
 export interface Report {
   id: string;
   contentType: string;
+  contentId?: string;
+  reportedUserId: string;
   reportedUserName: string;
+  reporterId: string;
   reporterName: string;
   reason: string;
   status: string;
@@ -80,7 +83,6 @@ export const getReportDetail = async (reportId: string) => {
 export const processReport = async (reportId: string, processData: {
   action: 'approve' | 'reject';
   reason: string;
-  adminId: number;
 }): Promise<boolean> => {
   const response = await apiPost(`/admin/reports/${reportId}/process`, processData);
   

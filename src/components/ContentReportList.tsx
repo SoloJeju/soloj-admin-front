@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getReportedContent, updateContentStatus, applyContentAction } from '../services/contentService';
+import { getReportedContent, updateContentStatus, applyContentAction, getPostDetail, getCommentDetail } from '../services/contentService';
 
 const ContentReportList: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -13,6 +13,10 @@ const ContentReportList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [detailModal, setDetailModal] = useState<{ open: boolean; contentId: string | null }>({ open: false, contentId: null });
+  const [contentDetail, setContentDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<any>(null);
 
   useEffect(() => {
     fetchContentReports();
@@ -21,13 +25,20 @@ const ContentReportList: React.FC = () => {
   const fetchContentReports = async () => {
     try {
       setLoading(true);
-      const response = await getReportedContent({
+      
+      const filters = {
         page: currentPage,
         limit: 10,
         type: contentTypeFilter !== 'all' ? contentTypeFilter : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         search: searchTerm || undefined
-      });
+      };
+      
+      console.log('필터링 요청:', filters); // 디버깅용
+      
+      const response = await getReportedContent(filters);
+      
+      console.log('필터링 응답:', response); // 디버깅용
       
       setReports(response.contents || []);
       setTotalPages(response.pagination?.totalPages || 1);
@@ -46,11 +57,13 @@ const ContentReportList: React.FC = () => {
     fetchContentReports();
   };
 
-  const handleStatusChange = async (contentId: string, newStatus: string) => {
+  const handleStatusChange = async (contentId: string, contentType: string, newStatus: string) => {
     try {
       setActionLoading(contentId);
-      await updateContentStatus(contentId, newStatus, '관리자에 의한 상태 변경');
+      console.log('상태 변경 요청:', { contentId, contentType, newStatus }); // 디버깅용
+      await updateContentStatus(contentId, contentType, newStatus, '관리자에 의한 상태 변경');
       await fetchContentReports(); // 목록 새로고침
+      alert('상태가 성공적으로 변경되었습니다.');
     } catch (err) {
       console.error('Status update error:', err);
       alert('상태 변경에 실패했습니다.');
@@ -59,21 +72,72 @@ const ContentReportList: React.FC = () => {
     }
   };
 
-  const handleAction = async (contentId: string, actionType: string) => {
+  const handleAction = async (contentId: string, contentType: string, actionType: string) => {
     try {
       setActionLoading(contentId);
-      await applyContentAction(contentId, {
-        actionType: actionType as 'delete' | 'hide' | 'warn',
-        reason: '관리자에 의한 조치',
-        adminId: 1 // TODO: 실제 관리자 ID로 변경
+      console.log('조치 적용 요청:', { contentId, contentType, actionType }); // 디버깅용
+      await applyContentAction(contentId, contentType, {
+        actionType: actionType as 'hide' | 'show' | 'delete' | 'restore',
+        reason: '관리자에 의한 조치'
       });
       await fetchContentReports(); // 목록 새로고침
+      alert('조치가 성공적으로 적용되었습니다.');
     } catch (err) {
       console.error('Action apply error:', err);
       alert('조치 적용에 실패했습니다.');
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleDetailView = async (contentId: string, contentType: string) => {
+    try {
+      setDetailLoading(true);
+      setDetailModal({ open: true, contentId });
+      
+      // 현재 선택된 콘텐츠 정보 찾기
+      const currentContent = reports.find((content: any) => content.contentId === contentId);
+      setSelectedContent(currentContent);
+      
+      console.log('상세조회 요청 ID:', contentId, '타입:', contentType); // 디버깅용
+      console.log('현재 선택된 콘텐츠:', currentContent); // 디버깅용
+      
+      let detail;
+      console.log('contentType 확인:', contentType, '타입:', typeof contentType); // 디버깅용
+      if (contentType === 'comment') {
+        console.log('댓글 상세조회 시작'); // 디버깅용
+        // 댓글 상세조회
+        detail = await getCommentDetail(contentId);
+        console.log('댓글 상세조회 응답:', detail); // 디버깅용
+      } else {
+        console.log('게시글 상세조회 시작'); // 디버깅용
+        // 게시글 상세조회
+        detail = await getPostDetail(contentId);
+        console.log('게시글 상세조회 응답:', detail); // 디버깅용
+      }
+      
+      console.log('응답 구조 확인:', {
+        title: detail?.title,
+        authorNickname: detail?.authorNickname,
+        status: detail?.status,
+        comments: detail?.comments,
+        content: detail?.content,
+        postMeta: detail?.postMeta
+      }); // 디버깅용
+      setContentDetail(detail);
+    } catch (err) {
+      console.error('Detail fetch error:', err);
+      alert('콘텐츠 상세 정보를 불러오는데 실패했습니다.');
+      setDetailModal({ open: false, contentId: null });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setDetailModal({ open: false, contentId: null });
+    setContentDetail(null);
+    setSelectedContent(null);
   };
 
   if (loading) {
@@ -116,6 +180,7 @@ const ContentReportList: React.FC = () => {
             <option value="all">전체</option>
             <option value="visible">표시됨</option>
             <option value="hidden">숨김</option>
+            <option value="deleted">삭제됨</option>
           </FilterSelect>
         </FilterGroup>
 
@@ -134,7 +199,7 @@ const ContentReportList: React.FC = () => {
         <SearchGroup>
           <SearchInput
             type="text"
-            placeholder="콘텐츠 제목 또는 작성자 검색..."
+            placeholder="제목, 내용, 작성자명으로 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -157,10 +222,10 @@ const ContentReportList: React.FC = () => {
       {reports.length > 0 ? (
         <>
           <ReportList>
-            {reports.map((content: any) => (
-              <ReportCard key={content.contentId}>
+            {reports.map((content: any, index: number) => (
+              <ReportCard key={`${content.contentId}-${content.contentType}-${index}`} onClick={() => handleDetailView(content.contentId, content.contentType)}>
                 <ContentInfo>
-                  <ContentTitle>{content.contentTitle || '제목 없음'}</ContentTitle>
+                  <ContentTitle>{content.title || '제목 없음'}</ContentTitle>
                   <ContentStatus status={content.status || 'unknown'}>
                     {getStatusText(content.status)}
                   </ContentStatus>
@@ -176,17 +241,17 @@ const ContentReportList: React.FC = () => {
                   </DetailItem>
                   <DetailItem>
                     <DetailLabel>신고 수:</DetailLabel>
-                    <DetailValue>{content.reports?.length || 0}건</DetailValue>
+                    <DetailValue>{content.reportCount || 0}건</DetailValue>
                   </DetailItem>
                   <DetailItem>
                     <DetailLabel>콘텐츠 ID:</DetailLabel>
                     <DetailValue>{content.contentId}</DetailValue>
                   </DetailItem>
                   <DetailItem>
-                    <DetailLabel>최근 신고:</DetailLabel>
+                    <DetailLabel>신고일:</DetailLabel>
                     <DetailValue>
-                      {content.reports?.[0]?.createdAt 
-                        ? new Date(content.reports[0].createdAt).toLocaleDateString()
+                      {content.createdAt 
+                        ? new Date(content.createdAt).toLocaleDateString('ko-KR')
                         : '없음'
                       }
                     </DetailValue>
@@ -194,19 +259,43 @@ const ContentReportList: React.FC = () => {
                 </ContentDetails>
                 <ActionButtons>
                   <ActionButton
-                    onClick={() => handleStatusChange(content.contentId, 'visible')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(content.contentId, content.contentType, 'restore');
+                    }}
                     disabled={content.status === 'visible' || actionLoading === content.contentId}
                   >
                     {actionLoading === content.contentId ? '처리중...' : '복구'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleStatusChange(content.contentId, 'hidden')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(content.contentId, content.contentType, 'hide');
+                    }}
                     disabled={content.status === 'hidden' || actionLoading === content.contentId}
                   >
                     {actionLoading === content.contentId ? '처리중...' : '숨김'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleAction(content.contentId, 'delete')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(content.contentId, content.contentType, 'show');
+                    }}
+                    disabled={content.status === 'visible' || actionLoading === content.contentId}
+                  >
+                    {actionLoading === content.contentId ? '처리중...' : '표시'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const confirmed = window.confirm(
+                        '⚠️ 경고: 삭제는 되돌릴 수 없는 심각한 조치입니다.\n\n' +
+                        '정말로 이 콘텐츠를 삭제하시겠습니까?'
+                      );
+                      if (confirmed) {
+                        handleAction(content.contentId, content.contentType, 'delete');
+                      }
+                    }}
                     disabled={actionLoading === content.contentId}
                   >
                     {actionLoading === content.contentId ? '처리중...' : '삭제'}
@@ -257,6 +346,140 @@ const ContentReportList: React.FC = () => {
           </EmptyDescription>
         </EmptyState>
       )}
+
+      {/* 콘텐츠 상세 조회 모달 */}
+      {detailModal.open && (
+        <ModalOverlay onClick={closeDetailModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>콘텐츠 상세 정보</ModalTitle>
+              <CloseButton onClick={closeDetailModal}>&times;</CloseButton>
+            </ModalHeader>
+            
+            {detailLoading ? (
+              <ModalBody>
+                <LoadingText>상세 정보를 불러오는 중...</LoadingText>
+              </ModalBody>
+            ) : contentDetail ? (
+              <ModalBody>
+                {/* 댓글인 경우 게시글 맥락 정보 표시 */}
+                {contentDetail.postMeta && (
+                  <PostContextSection>
+                    <PostContextLabel>게시글 맥락:</PostContextLabel>
+                    <PostContextItem>
+                      <PostContextTitle>제목: {contentDetail.postMeta.title}</PostContextTitle>
+                      <PostContextAuthor>작성자: {contentDetail.postMeta.authorNickname}</PostContextAuthor>
+                      <PostContextDate>작성일: {new Date(contentDetail.postMeta.createdAt).toLocaleString('ko-KR')}</PostContextDate>
+                    </PostContextItem>
+                  </PostContextSection>
+                )}
+                
+                <DetailSection>
+                  {contentDetail.title && (
+                    <DetailRow>
+                      <ModalDetailLabel>제목:</ModalDetailLabel>
+                      <ModalDetailValue>{contentDetail.title}</ModalDetailValue>
+                    </DetailRow>
+                  )}
+                  <DetailRow>
+                    <ModalDetailLabel>작성자:</ModalDetailLabel>
+                    <ModalDetailValue>{contentDetail.authorNickname || contentDetail.authorName || contentDetail.author}</ModalDetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <ModalDetailLabel>작성일:</ModalDetailLabel>
+                    <ModalDetailValue>{new Date(contentDetail.createdAt).toLocaleString('ko-KR')}</ModalDetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <ModalDetailLabel>상태:</ModalDetailLabel>
+                    <ModalDetailValue>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        background: getStatusColor(contentDetail.status || 'visible'),
+                        color: 'white'
+                      }}>
+                        {getStatusText(contentDetail.status || 'visible')}
+                      </span>
+                    </ModalDetailValue>
+                  </DetailRow>
+                  {contentDetail.postCategory && (
+                    <DetailRow>
+                      <ModalDetailLabel>카테고리:</ModalDetailLabel>
+                      <ModalDetailValue>{contentDetail.postCategory}</ModalDetailValue>
+                    </DetailRow>
+                  )}
+                </DetailSection>
+                
+                <ContentSection>
+                  <ContentLabel>{contentDetail.postMeta ? '댓글 내용:' : '게시글 내용:'}</ContentLabel>
+                  <ContentText>{contentDetail.content}</ContentText>
+                </ContentSection>
+                
+                {contentDetail.comments && contentDetail.comments.length > 0 && (
+                  <CommentsSection>
+                    <CommentsLabel>댓글 목록:</CommentsLabel>
+                    {contentDetail.comments.map((comment: any, index: number) => (
+                      <CommentItem key={comment.commentId || comment.id || index}>
+                        <CommentHeader>
+                          <CommentAuthor>{comment.authorNickname || comment.authorName || comment.author}</CommentAuthor>
+                          <CommentDate>{new Date(comment.createdAt).toLocaleString('ko-KR')}</CommentDate>
+                          <span style={{
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontSize: '0.7rem',
+                            fontWeight: '600',
+                            background: getStatusColor(comment.status || 'visible'),
+                            color: 'white'
+                          }}>
+                            {getStatusText(comment.status || 'visible')}
+                          </span>
+                        </CommentHeader>
+                        <CommentContent>{comment.content}</CommentContent>
+                      </CommentItem>
+                    ))}
+                  </CommentsSection>
+                )}
+                
+                {selectedContent && (
+                  <ReportSection>
+                    <ReportLabel>신고 정보:</ReportLabel>
+                    <ReportItem>
+                      <ReportHeader>
+                        <ReportReason>신고 사유: {getReportReasonText(selectedContent.reason)}</ReportReason>
+                        <ReportDate>신고일: {new Date(selectedContent.createdAt).toLocaleString('ko-KR')}</ReportDate>
+                      </ReportHeader>
+                      <ReportDetails>
+                        <ReportDetailItem>
+                          <ReportDetailLabel>신고 ID:</ReportDetailLabel>
+                          <ReportDetailValue>{selectedContent.reportId}</ReportDetailValue>
+                        </ReportDetailItem>
+                        <ReportDetailItem>
+                          <ReportDetailLabel>신고자:</ReportDetailLabel>
+                          <ReportDetailValue>{selectedContent.authorName}</ReportDetailValue>
+                        </ReportDetailItem>
+                        <ReportDetailItem>
+                          <ReportDetailLabel>콘텐츠 유형:</ReportDetailLabel>
+                          <ReportDetailValue>{getContentTypeText(selectedContent.contentType)}</ReportDetailValue>
+                        </ReportDetailItem>
+                        <ReportDetailItem>
+                          <ReportDetailLabel>현재 상태:</ReportDetailLabel>
+                          <ReportDetailValue>{getStatusText(selectedContent.status)}</ReportDetailValue>
+                        </ReportDetailItem>
+                      </ReportDetails>
+                    </ReportItem>
+                  </ReportSection>
+                )}
+              </ModalBody>
+            ) : (
+              <ModalBody>
+                <ErrorText>상세 정보를 불러올 수 없습니다.</ErrorText>
+              </ModalBody>
+            )}
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };
@@ -270,12 +493,34 @@ const getStatusText = (status: string) => {
   }
 };
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'visible': return '#28a745'; // 초록
+    case 'hidden': return '#ffc107'; // 노랑
+    case 'deleted': return '#dc3545'; // 빨강
+    default: return '#6c757d'; // 회색
+  }
+};
+
 const getContentTypeText = (type: string) => {
   switch (type) {
     case 'post': return '게시글';
     case 'comment': return '댓글';
     case 'review': return '리뷰';
     default: return type || '알 수 없음';
+  }
+};
+
+const getReportReasonText = (reason: string) => {
+  switch (reason) {
+    case 'SPAM': return '스팸';
+    case 'HARASSMENT': return '괴롭힘';
+    case 'VIOLENCE': return '폭력';
+    case 'HATE_SPEECH': return '혐오 발언';
+    case 'INAPPROPRIATE': return '부적절한 내용';
+    case 'COPYRIGHT': return '저작권 침해';
+    case 'OTHER': return '기타';
+    default: return reason || '알 수 없음';
   }
 };
 
@@ -426,11 +671,6 @@ const LoadingIcon = styled.div`
   }
 `;
 
-const LoadingText = styled.p`
-  font-size: 1.2rem;
-  color: #6c757d;
-`;
-
 const ErrorSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -441,12 +681,6 @@ const ErrorSection = styled.div`
 
 const ErrorIcon = styled.div`
   font-size: 4rem;
-  margin-bottom: 20px;
-`;
-
-const ErrorText = styled.p`
-  font-size: 1.2rem;
-  color: #e74c3c;
   margin-bottom: 20px;
 `;
 
@@ -478,6 +712,7 @@ const ReportCard = styled.div`
   padding: 25px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
   
   &:hover {
     transform: translateY(-2px);
@@ -506,14 +741,7 @@ const ContentStatus = styled.span<{ status: string }>`
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 600;
-  background: ${props => {
-    switch (props.status) {
-      case 'visible': return '#28a745';
-      case 'hidden': return '#ffc107';
-      case 'deleted': return '#dc3545';
-      default: return '#6c757d';
-    }
-  }};
+  background: ${props => getStatusColor(props.status)};
   color: white;
   flex-shrink: 0;
 `;
@@ -619,6 +847,266 @@ const EmptyDescription = styled.p`
   color: #6c757d;
   line-height: 1.6;
   margin: 0;
+`;
+
+// 모달 스타일 컴포넌트들
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    color: #333;
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 20px;
+`;
+
+const DetailSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const DetailRow = styled.div`
+  display: flex;
+  margin-bottom: 10px;
+  align-items: center;
+`;
+
+const ModalDetailLabel = styled.span`
+  font-weight: 600;
+  color: #495057;
+  min-width: 80px;
+  margin-right: 10px;
+`;
+
+const ModalDetailValue = styled.span`
+  color: #333;
+  flex: 1;
+`;
+
+const ContentSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const ContentLabel = styled.div`
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+`;
+
+const ContentText = styled.div`
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  white-space: pre-wrap;
+  line-height: 1.5;
+`;
+
+const CommentsSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const CommentsLabel = styled.div`
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 15px;
+`;
+
+const CommentItem = styled.div`
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 10px;
+`;
+
+const CommentHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+`;
+
+const CommentAuthor = styled.span`
+  font-weight: 600;
+  color: #495057;
+`;
+
+const CommentDate = styled.span`
+  font-size: 0.9rem;
+  color: #6c757d;
+`;
+
+const CommentContent = styled.div`
+  color: #333;
+  line-height: 1.5;
+`;
+
+// 게시글 맥락 관련 스타일 컴포넌트들
+const PostContextSection = styled.div`
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+`;
+
+const PostContextLabel = styled.div`
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+`;
+
+const PostContextItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const PostContextTitle = styled.span`
+  font-weight: 600;
+  color: #343a40;
+`;
+
+const PostContextAuthor = styled.span`
+  color: #6c757d;
+  font-size: 0.9rem;
+`;
+
+const PostContextDate = styled.span`
+  color: #6c757d;
+  font-size: 0.9rem;
+`;
+
+const LoadingText = styled.div`
+  text-align: center;
+  color: #6c757d;
+  font-size: 1.1rem;
+  padding: 40px 20px;
+`;
+
+const ErrorText = styled.div`
+  text-align: center;
+  color: #dc3545;
+  font-size: 1.1rem;
+  padding: 40px 20px;
+`;
+
+// 상태 배지 스타일 컴포넌트
+const StatusBadge = styled.span<{ status: string }>`
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: ${props => getStatusColor(props.status)};
+  color: white;
+`;
+
+// 신고 관련 스타일 컴포넌트들
+const ReportSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const ReportLabel = styled.div`
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 15px;
+`;
+
+const ReportItem = styled.div`
+  background: #fff3cd;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ffeaa7;
+`;
+
+const ReportHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+const ReportReason = styled.span`
+  font-weight: 600;
+  color: #856404;
+`;
+
+const ReportDate = styled.span`
+  font-size: 0.9rem;
+  color: #856404;
+`;
+
+const ReportDetails = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+`;
+
+const ReportDetailItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const ReportDetailLabel = styled.span`
+  font-size: 0.8rem;
+  color: #856404;
+  font-weight: 600;
+`;
+
+const ReportDetailValue = styled.span`
+  font-size: 0.9rem;
+  color: #856404;
 `;
 
 export default ContentReportList;
