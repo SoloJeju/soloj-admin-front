@@ -62,11 +62,7 @@ const ContentReportList: React.FC = () => {
   const handleAction = async (contentId: string, actionType: string) => {
     try {
       setActionLoading(contentId);
-      await applyContentAction(contentId, {
-        actionType: actionType as 'restore' | 'delete' | 'temporaryBlock',
-        reason: '관리자에 의한 조치',
-        adminId: 'current-admin' // 실제로는 로그인된 관리자 ID 사용
-      });
+      await applyContentAction(contentId, actionType, '관리자에 의한 조치');
       await fetchContentReports(); // 목록 새로고침
     } catch (err) {
       console.error('Action apply error:', err);

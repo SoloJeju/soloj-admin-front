@@ -34,7 +34,19 @@ const InquiryList: React.FC = () => {
         search: searchTerm || undefined
       });
       
-      setInquiries(response.inquiries || []);
+      // inquiryService의 InquirySummary를 types/report의 InquirySummary로 변환
+      const convertedInquiries = (response.inquiries || []).map(inquiry => ({
+        id: inquiry.id,
+        userName: inquiry.author,
+        category: inquiry.category as InquiryCategory,
+        subject: inquiry.title,
+        status: inquiry.status as InquiryStatus,
+        priority: inquiry.priority as InquiryPriority,
+        createdAt: inquiry.createdAt,
+        hasReply: inquiry.replyCount > 0,
+        replyCount: inquiry.replyCount
+      }));
+      setInquiries(convertedInquiries as InquirySummary[]);
       setTotalPages(response.pagination?.totalPages || 1);
       setTotalItems(response.pagination?.totalItems || 0);
       setError(null);

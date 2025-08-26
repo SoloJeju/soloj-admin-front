@@ -44,7 +44,7 @@ export const getDashboardData = async () => {
 
     return {
       stats,
-      activities
+      recentActivities: activities
     };
   } catch (error) {
     throw new Error('대시보드 데이터를 불러오는데 실패했습니다.');

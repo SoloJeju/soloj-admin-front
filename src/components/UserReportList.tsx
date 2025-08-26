@@ -60,12 +60,7 @@ const UserReportList: React.FC = () => {
   const handleAction = async (userId: string, actionType: string) => {
     try {
       setActionLoading(userId);
-      await applyUserAction(userId, {
-        actionType: actionType as 'warning' | 'softBlock' | 'restrictWriting' | 'permanentBan' | 'restore',
-        duration: actionType === 'softBlock' ? 7 : undefined, // 7일 일시 차단
-        reason: '관리자에 의한 조치',
-        adminId: 'current-admin' // 실제로는 로그인된 관리자 ID 사용
-      });
+      await applyUserAction(userId, actionType, '관리자에 의한 조치');
       await fetchUserReports(); // 목록 새로고침
     } catch (err) {
       console.error('Action apply error:', err);

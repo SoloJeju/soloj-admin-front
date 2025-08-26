@@ -107,13 +107,13 @@ export const getInquiryDetail = async (inquiryId: string) => {
 };
 
 // 1:1 문의 답변 (더미 데이터 사용)
-export const replyToInquiry = async (inquiryId: string, replyContent: string): Promise<boolean> => {
+export const replyToInquiry = async (inquiryId: string, replyData: { adminReply: string; status: string }): Promise<boolean> => {
   // 실제 API 호출 대신 더미 데이터 업데이트
   await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
   
   const inquiryIndex = mockInquiries.findIndex(inq => inq.id === inquiryId);
   if (inquiryIndex !== -1) {
-    mockInquiries[inquiryIndex].status = 'answered';
+    mockInquiries[inquiryIndex].status = replyData.status;
     mockInquiries[inquiryIndex].replyCount += 1;
     return true;
   }

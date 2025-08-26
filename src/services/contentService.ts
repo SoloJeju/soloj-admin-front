@@ -75,13 +75,43 @@ export const getContentReports = async (filters: ContentFilters = {}): Promise<C
 };
 
 // 콘텐츠 상태 업데이트 (더미 데이터 사용)
-export const updateContentStatus = async (contentId: string, newStatus: string): Promise<boolean> => {
+export const updateContentStatus = async (contentId: string, newStatus: string, reason?: string): Promise<boolean> => {
   // 실제 API 호출 대신 더미 데이터 업데이트
   await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
   
   const contentIndex = mockContents.findIndex(content => content.id === contentId);
   if (contentIndex !== -1) {
     mockContents[contentIndex].status = newStatus;
+    return true;
+  }
+  
+  return false;
+};
+
+// 신고된 콘텐츠 조회 (getReportedContent의 별칭)
+export const getReportedContent = getContentReports;
+
+// 콘텐츠 액션 적용 (더미 데이터 사용)
+export const applyContentAction = async (contentId: string, action: string, reason?: string): Promise<boolean> => {
+  // 실제 API 호출 대신 더미 데이터 업데이트
+  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+  
+  const contentIndex = mockContents.findIndex(content => content.id === contentId);
+  if (contentIndex !== -1) {
+    // 액션에 따른 상태 변경
+    switch (action) {
+      case 'hide':
+        mockContents[contentIndex].status = 'hidden';
+        break;
+      case 'restore':
+        mockContents[contentIndex].status = 'visible';
+        break;
+      case 'delete':
+        mockContents.splice(contentIndex, 1);
+        break;
+      default:
+        return false;
+    }
     return true;
   }
   
