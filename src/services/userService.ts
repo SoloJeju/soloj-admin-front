@@ -1,4 +1,4 @@
-import { mockUsers } from './mockData';
+import { apiGet, apiPatch, apiPost } from './api';
 
 export interface UserReportSummary {
   id: string;
@@ -27,91 +27,75 @@ export interface UserFilters {
   search?: string;
 }
 
-// 신고된 사용자 목록 조회 (더미 데이터 사용)
+// 신고된 사용자 목록 조회
 export const getUserReports = async (filters: UserFilters = {}): Promise<UserListResponse> => {
-  // 실제 API 호출 대신 더미 데이터 반환
-  await new Promise(resolve => setTimeout(resolve, 400)); // 로딩 시뮬레이션
+  const params: Record<string, any> = {};
   
-  let filteredUsers = [...mockUsers];
+  if (filters.page) params.page = filters.page;
+  if (filters.limit) params.limit = filters.limit;
+  if (filters.status && filters.status !== 'all') params.status = filters.status;
+  if (filters.search) params.search = filters.search;
   
-  // 상태 필터링
-  if (filters.status && filters.status !== 'all') {
-    filteredUsers = filteredUsers.filter(user => user.status === filters.status);
+  const response = await apiGet('/admin/users/reported', params);
+  
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result && Array.isArray(response.result)) {
+    // API 응답이 배열 형태로 오는 경우
+    return {
+      users: response.result.map((user: any) => ({
+        id: user.userId?.toString() || '',
+        username: user.userName || '',
+        email: '', // API에서 제공하지 않음
+        status: user.currentStatus || 'normal',
+        reportCount: user.totalReports || 0,
+        lastActive: '', // API에서 제공하지 않음
+        joinDate: '' // API에서 제공하지 않음
+      })),
+      pagination: {
+        totalPages: 1,
+        totalItems: response.result.length,
+        currentPage: filters.page || 1,
+        limit: filters.limit || 20
+      }
+    };
+  } else if (response.users) {
+    return response;
+  } else {
+    return {
+      users: [],
+      pagination: {
+        totalPages: 1,
+        totalItems: 0,
+        currentPage: 1,
+        limit: filters.limit || 20
+      }
+    };
   }
-  
-  // 검색 필터링
-  if (filters.search) {
-    const searchTerm = filters.search.toLowerCase();
-    filteredUsers = filteredUsers.filter(user => 
-      user.username.toLowerCase().includes(searchTerm) ||
-      user.email.toLowerCase().includes(searchTerm)
-    );
-  }
-  
-  // 페이지네이션
-  const page = filters.page || 1;
-  const limit = filters.limit || 20;
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-  
-  return {
-    users: paginatedUsers,
-    pagination: {
-      totalPages: Math.ceil(filteredUsers.length / limit),
-      totalItems: filteredUsers.length,
-      currentPage: page,
-      limit
-    }
-  };
 };
 
-// 사용자 상태 업데이트 (더미 데이터 사용)
+// 사용자 상태 업데이트
 export const updateUserStatus = async (userId: string, newStatus: string, reason?: string): Promise<boolean> => {
-  // 실제 API 호출 대신 더미 데이터 업데이트
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+  const response = await apiPatch(`/admin/users/${userId}/status`, {
+    status: newStatus,
+    reason: reason || '관리자에 의한 상태 변경'
+  });
   
-  const userIndex = mockUsers.findIndex(user => user.id === userId);
-  if (userIndex !== -1) {
-    mockUsers[userIndex].status = newStatus;
-    return true;
-  }
-  
-  return false;
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
 };
 
 // 신고된 사용자 조회 (getReportedUsers의 별칭)
 export const getReportedUsers = getUserReports;
 
-// 사용자 액션 적용 (더미 데이터 사용)
-export const applyUserAction = async (userId: string, action: string, reason?: string): Promise<boolean> => {
-  // 실제 API 호출 대신 더미 데이터 업데이트
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+// 사용자 액션 적용
+export const applyUserAction = async (userId: string, actionData: {
+  actionType: 'ban' | 'warn';
+  duration?: number;
+  reason: string;
+  adminId: number;
+}): Promise<boolean> => {
+  const response = await apiPost(`/admin/users/${userId}/actions`, actionData);
   
-  const userIndex = mockUsers.findIndex(user => user.id === userId);
-  if (userIndex !== -1) {
-    // 액션에 따른 상태 변경
-    switch (action) {
-      case 'warn':
-        // 경고는 상태를 변경하지 않고 로그만 남김
-        break;
-      case 'softBlock':
-        mockUsers[userIndex].status = 'softBlocked';
-        break;
-      case 'restrict':
-        mockUsers[userIndex].status = 'restricted';
-        break;
-      case 'ban':
-        mockUsers[userIndex].status = 'banned';
-        break;
-      case 'restore':
-        mockUsers[userIndex].status = 'normal';
-        break;
-      default:
-        return false;
-    }
-    return true;
-  }
-  
-  return false;
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
 };

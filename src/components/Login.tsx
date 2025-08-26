@@ -34,7 +34,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         // 관리자 정보 구성
         const adminInfo = {
           id: tokenInfo.userId?.toString() || '',
-          email: email,
+          username: email,
           name: tokenInfo.role === 'ADMIN' ? '관리자' : '사용자'
         };
         

@@ -16,7 +16,7 @@ const ContentReportList: React.FC = () => {
 
   useEffect(() => {
     fetchContentReports();
-  }, [currentPage, statusFilter, contentTypeFilter]);
+  }, [currentPage, statusFilter, contentTypeFilter, searchTerm]);
 
   const fetchContentReports = async () => {
     try {
@@ -62,7 +62,11 @@ const ContentReportList: React.FC = () => {
   const handleAction = async (contentId: string, actionType: string) => {
     try {
       setActionLoading(contentId);
-      await applyContentAction(contentId, actionType, '관리자에 의한 조치');
+      await applyContentAction(contentId, {
+        actionType: actionType as 'delete' | 'hide' | 'warn',
+        reason: '관리자에 의한 조치',
+        adminId: 1 // TODO: 실제 관리자 ID로 변경
+      });
       await fetchContentReports(); // 목록 새로고침
     } catch (err) {
       console.error('Action apply error:', err);

@@ -1,5 +1,5 @@
 // API 기본 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 // 공통 헤더
 const getHeaders = () => {
@@ -63,16 +63,21 @@ export const apiCall = async (
 
 // GET 요청
 export const apiGet = (endpoint: string, params?: Record<string, any>) => {
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
+  let url = endpoint;
   if (params) {
+    const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        url.searchParams.append(key, String(value));
+        searchParams.append(key, String(value));
       }
     });
+    const queryString = searchParams.toString();
+    if (queryString) {
+      url = `${endpoint}?${queryString}`;
+    }
   }
 
-  return apiCall(url.pathname + url.search);
+  return apiCall(url);
 };
 
 // POST 요청

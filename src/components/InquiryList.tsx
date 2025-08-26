@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getInquiries, replyToInquiry, updateInquiryStatus, updateInquiryPriority } from '../services/inquiryService';
+import { getInquiries, replyToInquiry, updateInquiryStatus, updateInquiryPriority, getInquiryDetail } from '../services/inquiryService';
 import { InquirySummary, InquiryStatus, InquiryPriority, InquiryCategory } from '../types/report';
 
 const InquiryList: React.FC = () => {
@@ -17,34 +17,77 @@ const InquiryList: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [detailModal, setDetailModal] = useState<{ open: boolean; inquiryId: string | null }>({ open: false, inquiryId: null });
+  const [inquiryDetail, setInquiryDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     fetchInquiries();
-  }, [currentPage, statusFilter, categoryFilter, priorityFilter]);
+  }, [currentPage, statusFilter, categoryFilter, priorityFilter, searchTerm]);
+
+  // API 명세에 맞게 상태값 변환
+  const convertStatusToApi = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'PENDING';
+      case 'inProgress': return 'IN_PROGRESS';
+      case 'answered': return 'REPLIED';
+      case 'closed': return 'CLOSED';
+      default: return status.toUpperCase();
+    }
+  };
+
+  // API 명세에 맞게 카테고리값 변환
+  const convertCategoryToApi = (category: string): string => {
+    switch (category) {
+      case 'account': return 'ACCOUNT';
+      case 'payment': return 'PAYMENT';
+      case 'service': return 'GENERAL';
+      case 'technical': return 'TECHNICAL';
+      case 'safety': return 'REPORT';
+      case 'other': return 'OTHER';
+      default: return category.toUpperCase();
+    }
+  };
+
+  // API 명세에 맞게 우선순위값 변환
+  const convertPriorityToApi = (priority: string): string => {
+    switch (priority) {
+      case 'urgent': return 'URGENT';
+      case 'high': return 'HIGH';
+      case 'normal': return 'NORMAL';
+      case 'low': return 'LOW';
+      default: return priority.toUpperCase();
+    }
+  };
 
   const fetchInquiries = async () => {
     try {
       setLoading(true);
-      const response = await getInquiries({
+      
+      const filters = {
         page: currentPage,
         limit: 10,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        category: categoryFilter !== 'all' ? categoryFilter : undefined,
-        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+        status: statusFilter !== 'all' ? convertStatusToApi(statusFilter) : undefined,
+        category: categoryFilter !== 'all' ? convertCategoryToApi(categoryFilter) : undefined,
+        priority: priorityFilter !== 'all' ? convertPriorityToApi(priorityFilter) : undefined,
         search: searchTerm || undefined
-      });
+      };
+      
+      console.log('필터링 파라미터:', filters); // 디버깅용
+      
+      const response = await getInquiries(filters);
       
       // inquiryService의 InquirySummary를 types/report의 InquirySummary로 변환
       const convertedInquiries = (response.inquiries || []).map(inquiry => ({
         id: inquiry.id,
-        userName: inquiry.author,
+        userName: inquiry.userName || inquiry.author || '',
         category: inquiry.category as InquiryCategory,
         subject: inquiry.title,
         status: inquiry.status as InquiryStatus,
         priority: inquiry.priority as InquiryPriority,
-        createdAt: inquiry.createdAt,
-        hasReply: inquiry.replyCount > 0,
-        replyCount: inquiry.replyCount
+        createdAt: inquiry.createdDate || inquiry.createdAt,
+        hasReply: inquiry.replied || (inquiry.replyCount || 0) > 0,
+        replyCount: inquiry.replyCount || 0
       }));
       setInquiries(convertedInquiries as InquirySummary[]);
       setTotalPages(response.pagination?.totalPages || 1);
@@ -66,7 +109,9 @@ const InquiryList: React.FC = () => {
   const handleStatusChange = async (inquiryId: string, newStatus: string) => {
     try {
       setActionLoading(inquiryId);
-      await updateInquiryStatus(inquiryId, newStatus);
+      // API 명세에 맞게 상태값 변환
+      const apiStatus = convertStatusToApi(newStatus);
+      await updateInquiryStatus(inquiryId, { status: apiStatus });
       await fetchInquiries();
     } catch (err) {
       console.error('Status update error:', err);
@@ -79,7 +124,7 @@ const InquiryList: React.FC = () => {
   const handlePriorityChange = async (inquiryId: string, newPriority: string) => {
     try {
       setActionLoading(inquiryId);
-      await updateInquiryPriority(inquiryId, newPriority);
+      await updateInquiryPriority(inquiryId, { priority: newPriority });
       await fetchInquiries();
     } catch (err) {
       console.error('Priority update error:', err);
@@ -98,8 +143,8 @@ const InquiryList: React.FC = () => {
     try {
       setActionLoading(inquiryId);
       await replyToInquiry(inquiryId, {
-        adminReply: replyText,
-        status: 'answered'
+        reply: replyText,
+        closeInquiry: false
       });
       setReplyText('');
       setSelectedInquiry(null);
@@ -111,6 +156,29 @@ const InquiryList: React.FC = () => {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleDetailView = async (inquiryId: string) => {
+    try {
+      setDetailLoading(true);
+      setDetailModal({ open: true, inquiryId });
+      
+      console.log('상세조회 요청 ID:', inquiryId); // 디버깅용
+      const detail = await getInquiryDetail(inquiryId);
+      console.log('상세조회 응답:', detail); // 디버깅용
+      setInquiryDetail(detail);
+    } catch (err) {
+      console.error('Detail fetch error:', err);
+      alert('문의 상세 정보를 불러오는데 실패했습니다.');
+      setDetailModal({ open: false, inquiryId: null });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setDetailModal({ open: false, inquiryId: null });
+    setInquiryDetail(null);
   };
 
   const getStatusColor = (status: InquiryStatus) => {
@@ -263,9 +331,9 @@ const InquiryList: React.FC = () => {
         </EmptyState>
       ) : (
         <>
-          <InquiryListContainer>
-            {inquiries.map((inquiry) => (
-              <InquiryCard key={inquiry.id}>
+                     <InquiryListContainer>
+             {inquiries.map((inquiry) => (
+               <InquiryCard key={inquiry.id} onClick={() => handleDetailView(inquiry.id)}>
                 <InquiryHeader>
                   <InquiryTitle>{inquiry.subject}</InquiryTitle>
                   <InquiryMeta>
@@ -312,6 +380,13 @@ const InquiryList: React.FC = () => {
                     disabled={actionLoading === inquiry.id}
                   >
                     처리중으로 변경
+                  </ActionButton>
+                  
+                  <ActionButton
+                    onClick={() => handlePriorityChange(inquiry.id, 'high')}
+                    disabled={actionLoading === inquiry.id}
+                  >
+                    우선순위 높임
                   </ActionButton>
                   
                   <ActionButton
@@ -376,12 +451,82 @@ const InquiryList: React.FC = () => {
                 다음
               </PageButton>
             </Pagination>
-          )}
-        </>
-      )}
-    </Container>
-  );
-};
+                     )}
+         </>
+       )}
+
+       {/* 상세 조회 모달 */}
+       {detailModal.open && (
+         <ModalOverlay onClick={closeDetailModal}>
+           <ModalContent onClick={(e) => e.stopPropagation()}>
+             <ModalHeader>
+               <ModalTitle>문의 상세 정보</ModalTitle>
+               <CloseButton onClick={closeDetailModal}>&times;</CloseButton>
+             </ModalHeader>
+             
+             {detailLoading ? (
+               <ModalBody>
+                 <LoadingText>상세 정보를 불러오는 중...</LoadingText>
+               </ModalBody>
+             ) : inquiryDetail ? (
+               <ModalBody>
+                 <DetailSection>
+                   <DetailRow>
+                     <ModalDetailLabel>제목:</ModalDetailLabel>
+                     <ModalDetailValue>{inquiryDetail.title}</ModalDetailValue>
+                   </DetailRow>
+                   <DetailRow>
+                     <ModalDetailLabel>작성자:</ModalDetailLabel>
+                     <ModalDetailValue>{inquiryDetail.userName} ({inquiryDetail.userEmail})</ModalDetailValue>
+                   </DetailRow>
+                   <DetailRow>
+                     <ModalDetailLabel>카테고리:</ModalDetailLabel>
+                     <ModalDetailValue>{inquiryDetail.categoryName || inquiryDetail.category}</ModalDetailValue>
+                   </DetailRow>
+                   <DetailRow>
+                     <ModalDetailLabel>상태:</ModalDetailLabel>
+                     <ModalDetailValue>{inquiryDetail.statusName || inquiryDetail.status}</ModalDetailValue>
+                   </DetailRow>
+                   <DetailRow>
+                     <ModalDetailLabel>우선순위:</ModalDetailLabel>
+                     <ModalDetailValue>{inquiryDetail.priorityName || inquiryDetail.priority}</ModalDetailValue>
+                   </DetailRow>
+                   <DetailRow>
+                     <ModalDetailLabel>작성일:</ModalDetailLabel>
+                     <ModalDetailValue>{new Date(inquiryDetail.createdDate).toLocaleString('ko-KR')}</ModalDetailValue>
+                   </DetailRow>
+                   {inquiryDetail.assignedAdminName && (
+                     <DetailRow>
+                       <ModalDetailLabel>담당자:</ModalDetailLabel>
+                       <ModalDetailValue>{inquiryDetail.assignedAdminName}</ModalDetailValue>
+                     </DetailRow>
+                   )}
+                 </DetailSection>
+                 
+                 <ContentSection>
+                   <ContentLabel>문의 내용:</ContentLabel>
+                   <ContentText>{inquiryDetail.content}</ContentText>
+                 </ContentSection>
+                 
+                 {inquiryDetail.adminReply && (
+                   <ModalReplySection>
+                     <ReplyLabel>관리자 답변:</ReplyLabel>
+                     <ReplyText>{inquiryDetail.adminReply}</ReplyText>
+                     <ReplyDate>답변일: {new Date(inquiryDetail.repliedAt).toLocaleString('ko-KR')}</ReplyDate>
+                   </ModalReplySection>
+                 )}
+               </ModalBody>
+             ) : (
+               <ModalBody>
+                 <ErrorText>상세 정보를 불러올 수 없습니다.</ErrorText>
+               </ModalBody>
+             )}
+           </ModalContent>
+         </ModalOverlay>
+       )}
+     </Container>
+   );
+ };
 
 // Styled Components
 const Container = styled.div`
@@ -496,6 +641,7 @@ const InquiryCard = styled.div`
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
@@ -777,6 +923,132 @@ const EmptyDescription = styled.p`
   font-size: 1rem;
   color: #adb5bd;
   margin: 0;
+`;
+
+// 모달 스타일 컴포넌트들
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    color: #333;
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 20px;
+`;
+
+const DetailSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const DetailRow = styled.div`
+  display: flex;
+  margin-bottom: 10px;
+  align-items: center;
+`;
+
+const ModalDetailLabel = styled.span`
+  font-weight: 600;
+  color: #495057;
+  min-width: 80px;
+  margin-right: 10px;
+`;
+
+const ModalDetailValue = styled.span`
+  color: #333;
+  flex: 1;
+`;
+
+const ContentSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const ContentLabel = styled.div`
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+`;
+
+const ContentText = styled.div`
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  white-space: pre-wrap;
+  line-height: 1.5;
+`;
+
+const ModalReplySection = styled.div`
+  background: #e8f5e8;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #c3e6c3;
+`;
+
+const ReplyLabel = styled.div`
+  font-weight: 600;
+  color: #155724;
+  margin-bottom: 10px;
+`;
+
+const ReplyText = styled.div`
+  color: #155724;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 10px;
+`;
+
+const ReplyDate = styled.div`
+  font-size: 0.9rem;
+  color: #6c757d;
 `;
 
 export default InquiryList;

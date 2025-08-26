@@ -1,4 +1,4 @@
-import { mockReports } from './mockData';
+import { apiGet, apiPatch, apiPost } from './api';
 
 export interface Report {
   id: string;
@@ -31,66 +31,69 @@ export interface ReportFilters {
   search?: string;
 }
 
-// 신고 목록 조회 (더미 데이터 사용)
+// 신고 목록 조회
 export const getReports = async (filters: ReportFilters = {}): Promise<ReportListResponse> => {
-  // 실제 API 호출 대신 더미 데이터 반환
-  await new Promise(resolve => setTimeout(resolve, 400)); // 로딩 시뮬레이션
+  const params: Record<string, any> = {};
   
-  let filteredReports = [...mockReports];
+  if (filters.page) params.page = filters.page;
+  if (filters.limit) params.limit = filters.limit;
+  if (filters.status && filters.status !== 'all') params.status = filters.status;
+  if (filters.reason && filters.reason !== 'all') params.reason = filters.reason;
+  if (filters.type && filters.type !== 'all') params.type = filters.type;
+  if (filters.search) params.search = filters.search;
   
-  // 상태 필터링
-  if (filters.status && filters.status !== 'all') {
-    filteredReports = filteredReports.filter(report => report.status === filters.status);
+  const response = await apiGet('/admin/reports', params);
+  
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result) {
+    return response.result;
+  } else if (response.reports) {
+    return response;
+  } else {
+    return {
+      reports: [],
+      pagination: {
+        totalPages: 1,
+        totalItems: 0,
+        currentPage: 1,
+        limit: filters.limit || 20
+      }
+    };
   }
-  
-  // 사유 필터링
-  if (filters.reason && filters.reason !== 'all') {
-    filteredReports = filteredReports.filter(report => report.reason === filters.reason);
-  }
-  
-  // 타입 필터링
-  if (filters.type && filters.type !== 'all') {
-    filteredReports = filteredReports.filter(report => report.contentType === filters.type);
-  }
-  
-  // 검색 필터링
-  if (filters.search) {
-    const searchTerm = filters.search.toLowerCase();
-    filteredReports = filteredReports.filter(report => 
-      report.reportedUserName.toLowerCase().includes(searchTerm) ||
-      report.reporterName.toLowerCase().includes(searchTerm) ||
-      (report.contentTitle && report.contentTitle.toLowerCase().includes(searchTerm))
-    );
-  }
-  
-  // 페이지네이션
-  const page = filters.page || 1;
-  const limit = filters.limit || 20;
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedReports = filteredReports.slice(startIndex, endIndex);
-  
-  return {
-    reports: paginatedReports,
-    pagination: {
-      totalPages: Math.ceil(filteredReports.length / limit),
-      totalItems: filteredReports.length,
-      currentPage: page,
-      limit
-    }
-  };
 };
 
-// 신고 상태 업데이트 (더미 데이터 사용)
-export const updateReportStatus = async (reportId: string, newStatus: string): Promise<boolean> => {
-  // 실제 API 호출 대신 더미 데이터 업데이트
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+// 신고 상세 조회
+export const getReportDetail = async (reportId: string) => {
+  const response = await apiGet(`/admin/reports/${reportId}`);
   
-  const reportIndex = mockReports.findIndex(report => report.id === reportId);
-  if (reportIndex !== -1) {
-    mockReports[reportIndex].status = newStatus;
-    return true;
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result) {
+    return response.result;
+  } else if (response.report) {
+    return response;
+  } else {
+    return { report: null };
   }
+};
+
+// 신고 처리 (승인/반려)
+export const processReport = async (reportId: string, processData: {
+  action: 'approve' | 'reject';
+  reason: string;
+  adminId: number;
+}): Promise<boolean> => {
+  const response = await apiPost(`/admin/reports/${reportId}/process`, processData);
   
-  return false;
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
+};
+
+// 신고 상태 업데이트
+export const updateReportStatus = async (reportId: string, newStatus: string): Promise<boolean> => {
+  const response = await apiPatch(`/admin/reports/${reportId}/status`, {
+    status: newStatus
+  });
+  
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
 };

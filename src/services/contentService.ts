@@ -1,4 +1,4 @@
-import { mockContents } from './mockData';
+import { apiGet, apiPatch, apiPost } from './api';
 
 export interface ContentReportSummary {
   id: string;
@@ -29,91 +29,58 @@ export interface ContentFilters {
   search?: string;
 }
 
-// 신고된 콘텐츠 목록 조회 (더미 데이터 사용)
+// 신고된 콘텐츠 목록 조회
 export const getContentReports = async (filters: ContentFilters = {}): Promise<ContentListResponse> => {
-  // 실제 API 호출 대신 더미 데이터 반환
-  await new Promise(resolve => setTimeout(resolve, 400)); // 로딩 시뮬레이션
+  const params: Record<string, any> = {};
   
-  let filteredContents = [...mockContents];
+  if (filters.page) params.page = filters.page;
+  if (filters.limit) params.limit = filters.limit;
+  if (filters.type && filters.type !== 'all') params.type = filters.type;
+  if (filters.status && filters.status !== 'all') params.status = filters.status;
+  if (filters.search) params.search = filters.search;
   
-  // 타입 필터링
-  if (filters.type && filters.type !== 'all') {
-    filteredContents = filteredContents.filter(content => content.type === filters.type);
+  const response = await apiGet('/admin/content/reported', params);
+  
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result) {
+    return response.result;
+  } else if (response.contents) {
+    return response;
+  } else {
+    return {
+      contents: [],
+      pagination: {
+        totalPages: 1,
+        totalItems: 0,
+        currentPage: 1,
+        limit: filters.limit || 20
+      }
+    };
   }
-  
-  // 상태 필터링
-  if (filters.status && filters.status !== 'all') {
-    filteredContents = filteredContents.filter(content => content.status === filters.status);
-  }
-  
-  // 검색 필터링
-  if (filters.search) {
-    const searchTerm = filters.search.toLowerCase();
-    filteredContents = filteredContents.filter(content => 
-      content.title.toLowerCase().includes(searchTerm) ||
-      content.author.toLowerCase().includes(searchTerm) ||
-      content.content.toLowerCase().includes(searchTerm)
-    );
-  }
-  
-  // 페이지네이션
-  const page = filters.page || 1;
-  const limit = filters.limit || 20;
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedContents = filteredContents.slice(startIndex, endIndex);
-  
-  return {
-    contents: paginatedContents,
-    pagination: {
-      totalPages: Math.ceil(filteredContents.length / limit),
-      totalItems: filteredContents.length,
-      currentPage: page,
-      limit
-    }
-  };
 };
 
-// 콘텐츠 상태 업데이트 (더미 데이터 사용)
+// 콘텐츠 상태 업데이트
 export const updateContentStatus = async (contentId: string, newStatus: string, reason?: string): Promise<boolean> => {
-  // 실제 API 호출 대신 더미 데이터 업데이트
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+  const response = await apiPatch(`/admin/content/${contentId}/status`, {
+    status: newStatus,
+    reason: reason || '관리자에 의한 상태 변경'
+  });
   
-  const contentIndex = mockContents.findIndex(content => content.id === contentId);
-  if (contentIndex !== -1) {
-    mockContents[contentIndex].status = newStatus;
-    return true;
-  }
-  
-  return false;
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
 };
 
 // 신고된 콘텐츠 조회 (getReportedContent의 별칭)
 export const getReportedContent = getContentReports;
 
-// 콘텐츠 액션 적용 (더미 데이터 사용)
-export const applyContentAction = async (contentId: string, action: string, reason?: string): Promise<boolean> => {
-  // 실제 API 호출 대신 더미 데이터 업데이트
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
+// 콘텐츠 액션 적용
+export const applyContentAction = async (contentId: string, actionData: {
+  actionType: 'delete' | 'hide' | 'warn';
+  reason: string;
+  adminId: number;
+}): Promise<boolean> => {
+  const response = await apiPost(`/admin/content/${contentId}/actions`, actionData);
   
-  const contentIndex = mockContents.findIndex(content => content.id === contentId);
-  if (contentIndex !== -1) {
-    // 액션에 따른 상태 변경
-    switch (action) {
-      case 'hide':
-        mockContents[contentIndex].status = 'hidden';
-        break;
-      case 'restore':
-        mockContents[contentIndex].status = 'visible';
-        break;
-      case 'delete':
-        mockContents.splice(contentIndex, 1);
-        break;
-      default:
-        return false;
-    }
-    return true;
-  }
-  
-  return false;
+  // API 응답 구조에 따라 성공 여부 확인
+  return response.success || response.result?.success || true;
 };

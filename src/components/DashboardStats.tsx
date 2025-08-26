@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getDashboardData } from '../services/dashboardService';
 
-interface DashboardStats {
+interface DashboardStatsData {
   totalUsers: number;
   totalReports: number;
   pendingReports: number;
@@ -17,7 +17,7 @@ interface DashboardStatsProps {
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats, setStats] = useState<DashboardStatsData>({
     totalUsers: 0,
     totalReports: 0,
     pendingReports: 0,
@@ -113,35 +113,35 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onTabChange }) => {
           <StatDescription>전체 접수된 신고</StatDescription>
         </StatCard>
         
-        <StatCard warning>
+        <StatCard $warning>
           <StatIcon>⏳</StatIcon>
           <StatNumber>{stats.pendingReports}</StatNumber>
           <StatLabel>대기 중인 신고</StatLabel>
           <StatDescription>검토 대기 중</StatDescription>
         </StatCard>
         
-        <StatCard success>
+        <StatCard $success>
           <StatIcon>✅</StatIcon>
           <StatNumber>{stats.resolvedReports}</StatNumber>
           <StatLabel>처리 완료</StatLabel>
           <StatDescription>검토 완료됨</StatDescription>
         </StatCard>
         
-        <StatCard danger>
+        <StatCard $danger>
           <StatIcon>🚫</StatIcon>
           <StatNumber>{stats.totalUsers}</StatNumber>
           <StatLabel>정지된 사용자</StatLabel>
           <StatDescription>계정 정지</StatDescription>
         </StatCard>
         
-        <StatCard info>
+        <StatCard $info>
           <StatIcon>⚠️</StatIcon>
-          <StatNumber>{stats.totalUsers - stats.totalReports}</StatNumber>
+          <StatNumber>{Math.max(0, (stats.totalUsers || 0) - (stats.totalReports || 0))}</StatNumber>
           <StatLabel>제한된 사용자</StatLabel>
           <StatDescription>일부 기능 제한</StatDescription>
         </StatCard>
         
-        <StatCard highlight>
+        <StatCard $highlight>
           <StatIcon>📅</StatIcon>
           <StatNumber>{stats.totalReports}</StatNumber>
           <StatLabel>오늘 신고</StatLabel>
@@ -323,7 +323,7 @@ const StatsGrid = styled.div`
   margin-bottom: 40px;
 `;
 
-const StatCard = styled.div<{ warning?: boolean; success?: boolean; danger?: boolean; info?: boolean; highlight?: boolean }>`
+const StatCard = styled.div<{ $warning?: boolean; $success?: boolean; $danger?: boolean; $info?: boolean; $highlight?: boolean }>`
   background: white;
   border-radius: 20px;
   padding: 30px;
@@ -335,23 +335,23 @@ const StatCard = styled.div<{ warning?: boolean; success?: boolean; danger?: boo
   overflow: hidden;
 
   ${props => {
-    if (props.warning) return `
+    if (props.$warning) return `
       border-color: #ffc107;
       background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
     `;
-    if (props.success) return `
+    if (props.$success) return `
       border-color: #28a745;
       background: linear-gradient(135deg, #f0fff4 0%, #d4edda 100%);
     `;
-    if (props.danger) return `
+    if (props.$danger) return `
       border-color: #dc3545;
       background: linear-gradient(135deg, #fff5f5 0%, #f8d7da 100%);
     `;
-    if (props.info) return `
+    if (props.$info) return `
       border-color: #17a2b8;
       background: linear-gradient(135deg, #f0f9ff 0%, #d1ecf1 100%);
     `;
-    if (props.highlight) return `
+    if (props.$highlight) return `
       border-color: #ff6b35;
       background: linear-gradient(135deg, #fff5f0 0%, #ffe8d6 100%);
     `;
@@ -374,11 +374,11 @@ const StatCard = styled.div<{ warning?: boolean; success?: boolean; danger?: boo
     right: 0;
     height: 4px;
     background: ${props => {
-      if (props.warning) return '#ffc107';
-      if (props.success) return '#28a745';
-      if (props.danger) return '#dc3545';
-      if (props.info) return '#17a2b8';
-      if (props.highlight) return '#ff6b35';
+      if (props.$warning) return '#ffc107';
+      if (props.$success) return '#28a745';
+      if (props.$danger) return '#dc3545';
+      if (props.$info) return '#17a2b8';
+      if (props.$highlight) return '#ff6b35';
       return '#e9ecef';
     }};
   }

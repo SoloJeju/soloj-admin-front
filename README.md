@@ -42,8 +42,14 @@ npm install
 ### 2. 환경 변수 설정
 `.env` 파일을 생성하고 다음 내용을 추가하세요:
 ```env
-REACT_APP_API_URL=http://localhost:8080/api
+# API 서버 URL (백엔드 서버 주소로 변경하세요)
+REACT_APP_API_URL=http://localhost:8080
+
+# 개발 환경 설정
+REACT_APP_ENV=development
 ```
+
+**중요**: `REACT_APP_API_URL`을 실제 백엔드 API 서버 주소로 변경해주세요.
 
 ### 3. 개발 서버 실행
 ```bash
@@ -68,7 +74,8 @@ src/
 │   ├── reportService.ts       # 신고 관련 API
 │   ├── userService.ts         # 사용자 관리 API
 │   ├── contentService.ts      # 콘텐츠 관리 API
-│   └── inquiryService.ts      # 1:1 문의 API
+│   ├── inquiryService.ts      # 1:1 문의 API
+│   └── adminService.ts        # 관리자 전용 API
 ├── contexts/          # React Context
 │   └── AuthContext.tsx        # 인증 상태 관리
 ├── types/             # TypeScript 타입 정의
@@ -79,19 +86,33 @@ src/
 
 ## API 엔드포인트
 
-### 인증
-- `POST /api/auth/login` - 관리자 로그인
+### 🔐 인증
+- `POST /api/admin/auth/login` - 관리자 로그인
+- `GET /api/admin/auth/permissions` - 관리자 권한 조회
+- `GET /api/admin/auth/activity-logs` - 관리자 활동 로그 조회
 
-### 대시보드
+### 📊 대시보드
 - `GET /api/admin/dashboard/stats` - 대시보드 통계
 - `GET /api/admin/dashboard/recent-activities` - 최근 활동
 
-### 신고 관리
-- `GET /api/admin/users/reported` - 신고된 사용자 목록
-- `GET /api/admin/content/reported` - 신고된 콘텐츠 목록
-- `GET /api/admin/reports` - 전체 신고 목록
+### 📋 신고 관리
+- `GET /api/admin/reports` - 신고 목록 조회
+- `GET /api/admin/reports/{reportId}` - 신고 상세 정보 조회
+- `POST /api/admin/reports/{reportId}/process` - 신고 처리
+- `POST /api/admin/notifications/send-report-result` - 신고 처리 결과 알림 전송
 
-### 1:1 문의 관리
+### 👥 사용자 관리
+- `GET /api/admin/users/reported` - 신고된 사용자 목록 조회
+- `PATCH /api/admin/users/{userId}/status` - 사용자 상태 변경
+- `POST /api/admin/users/{userId}/actions` - 사용자 조치 적용
+- `POST /api/admin/notifications/send-user-action` - 사용자 조치 알림 전송
+
+### 📝 콘텐츠 관리
+- `GET /api/admin/content/reported` - 신고된 콘텐츠 목록 조회
+- `PATCH /api/admin/content/{contentId}/status` - 콘텐츠 상태 변경
+- `POST /api/admin/content/{contentId}/actions` - 콘텐츠 조치 적용
+
+### 💬 1:1 문의 관리
 - `GET /api/admin/inquiries` - 문의 목록 조회
 - `GET /api/admin/inquiries/{id}` - 문의 상세 조회
 - `PUT /api/admin/inquiries/{id}/reply` - 문의 답변
@@ -99,6 +120,31 @@ src/
 - `PUT /api/admin/inquiries/{id}/priority` - 문의 우선순위 변경
 - `PUT /api/admin/inquiries/{id}/assign` - 문의 할당
 - `GET /api/admin/inquiries/stats` - 문의 통계
+- `GET /api/admin/inquiries/statuses` - 문의 상태 목록
+- `GET /api/admin/inquiries/priorities` - 문의 우선순위 목록
+- `GET /api/admin/inquiries/categories` - 문의 카테고리 목록
+
+### ⚙️ 시스템 설정
+- `GET /api/admin/settings/system` - 시스템 설정 조회
+- `PUT /api/admin/settings/system` - 시스템 설정 수정
+- `GET /api/admin/settings/report-reasons` - 신고 사유 카테고리 조회
+- `PUT /api/admin/settings/report-reasons` - 신고 사유 카테고리 수정
+- `GET /api/admin/settings/content-types` - 콘텐츠 유형 설정 조회
+- `PUT /api/admin/settings/content-types` - 콘텐츠 유형 설정 수정
+
+### 🔍 검색
+- `GET /api/admin/search` - 통합 검색
+- `POST /api/admin/search/advanced` - 고급 검색
+
+### 📈 통계
+- `GET /api/admin/statistics/users` - 사용자 통계 조회
+- `GET /api/admin/statistics/reports` - 신고 통계 조회
+- `GET /api/admin/statistics/content` - 콘텐츠 통계 조회
+
+### 🤖 자동 조치 시스템
+- `GET /api/admin/auto-actions/rules` - 자동 조치 규칙 조회
+- `PUT /api/admin/auto-actions/rules` - 자동 조치 규칙 업데이트
+- `GET /api/admin/auto-actions/history` - 자동 조치 이력 조회
 
 ## 사용자 인터페이스
 
@@ -203,9 +249,9 @@ npm run build
 ```
 
 ### 환경별 설정
-- **개발**: `REACT_APP_API_URL=http://localhost:8080/api`
-- **스테이징**: `REACT_APP_API_URL=https://staging-api.example.com/api`
-- **프로덕션**: `REACT_APP_API_URL=https://api.example.com/api`
+- **개발**: `REACT_APP_API_URL=http://localhost:8000`
+- **스테이징**: `REACT_APP_API_URL=https://staging-api.example.com`
+- **프로덕션**: `REACT_APP_API_URL=https://api.example.com`
 
 ## 기여하기
 

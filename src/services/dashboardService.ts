@@ -1,4 +1,4 @@
-import { mockDashboardStats, mockRecentActivities } from './mockData';
+import { apiGet } from './api';
 
 export interface DashboardStats {
   totalUsers: number;
@@ -20,21 +20,44 @@ export interface RecentActivity {
   user: string;
 }
 
-// 대시보드 통계 조회 (더미 데이터 사용)
+// 대시보드 통계 조회
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  // 실제 API 호출 대신 더미 데이터 반환
-  await new Promise(resolve => setTimeout(resolve, 500)); // 로딩 시뮬레이션
-  return mockDashboardStats;
+  const response = await apiGet('/admin/dashboard/stats');
+  
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result) {
+    return response.result;
+  } else if (response.stats) {
+    return response.stats;
+  } else {
+    return {
+      totalUsers: 0,
+      totalReports: 0,
+      totalContents: 0,
+      totalInquiries: 0,
+      pendingReports: 0,
+      pendingInquiries: 0,
+      resolvedReports: 0,
+      answeredInquiries: 0
+    };
+  }
 };
 
-// 최근 활동 조회 (더미 데이터 사용)
+// 최근 활동 조회
 export const getRecentActivities = async (limit: number = 10): Promise<RecentActivity[]> => {
-  // 실제 API 호출 대신 더미 데이터 반환
-  await new Promise(resolve => setTimeout(resolve, 300)); // 로딩 시뮬레이션
-  return mockRecentActivities.slice(0, limit);
+  const response = await apiGet('/admin/dashboard/recent-activities', { limit });
+  
+  // API 응답 구조에 따라 데이터 추출
+  if (response.result) {
+    return response.result;
+  } else if (response.activities) {
+    return response.activities;
+  } else {
+    return [];
+  }
 };
 
-// 대시보드 전체 데이터 조회 (더미 데이터 사용)
+// 대시보드 전체 데이터 조회
 export const getDashboardData = async () => {
   try {
     const [stats, activities] = await Promise.all([

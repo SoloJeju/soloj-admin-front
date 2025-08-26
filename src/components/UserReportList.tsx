@@ -15,7 +15,7 @@ const UserReportList: React.FC = () => {
 
   useEffect(() => {
     fetchUserReports();
-  }, [currentPage, statusFilter]);
+  }, [currentPage, statusFilter, searchTerm]);
 
   const fetchUserReports = async () => {
     try {
@@ -60,7 +60,11 @@ const UserReportList: React.FC = () => {
   const handleAction = async (userId: string, actionType: string) => {
     try {
       setActionLoading(userId);
-      await applyUserAction(userId, actionType, '관리자에 의한 조치');
+      await applyUserAction(userId, {
+        actionType: actionType as 'ban' | 'warn',
+        reason: '관리자에 의한 조치',
+        adminId: 1 // TODO: 실제 관리자 ID로 변경
+      });
       await fetchUserReports(); // 목록 새로고침
     } catch (err) {
       console.error('Action apply error:', err);
@@ -142,62 +146,57 @@ const UserReportList: React.FC = () => {
         <>
           <ReportList>
             {reports.map((user: any) => (
-              <ReportCard key={user.userId}>
+              <ReportCard key={user.id}>
                 <UserInfo>
-                  <UserName>{user.userName || '이름 없음'}</UserName>
-                  <UserStatus status={user.currentStatus || 'unknown'}>
-                    {getStatusText(user.currentStatus)}
+                  <UserName>{user.username || '이름 없음'}</UserName>
+                  <UserStatus status={user.status || 'unknown'}>
+                    {getStatusText(user.status)}
                   </UserStatus>
                 </UserInfo>
                 <ReportDetails>
                   <DetailItem>
                     <DetailLabel>신고 수:</DetailLabel>
-                    <DetailValue>{user.totalReports || 0}건</DetailValue>
+                    <DetailValue>{user.reportCount || 0}건</DetailValue>
                   </DetailItem>
                   <DetailItem>
                     <DetailLabel>사용자 ID:</DetailLabel>
-                    <DetailValue>{user.userId}</DetailValue>
+                    <DetailValue>{user.id}</DetailValue>
                   </DetailItem>
                   <DetailItem>
-                    <DetailLabel>최근 신고:</DetailLabel>
-                    <DetailValue>
-                      {user.recentReports?.[0]?.createdAt 
-                        ? new Date(user.recentReports[0].createdAt).toLocaleDateString()
-                        : '없음'
-                      }
-                    </DetailValue>
+                    <DetailLabel>이메일:</DetailLabel>
+                    <DetailValue>{user.email || '정보 없음'}</DetailValue>
                   </DetailItem>
                 </ReportDetails>
                 <ActionButtons>
                   <ActionButton
-                    onClick={() => handleStatusChange(user.userId, 'normal')}
-                    disabled={user.currentStatus === 'normal' || actionLoading === user.userId}
+                    onClick={() => handleStatusChange(user.id, 'normal')}
+                    disabled={user.status === 'normal' || actionLoading === user.id}
                   >
-                    {actionLoading === user.userId ? '처리중...' : '복구'}
+                    {actionLoading === user.id ? '처리중...' : '복구'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleAction(user.userId, 'warning')}
-                    disabled={actionLoading === user.userId}
+                    onClick={() => handleAction(user.id, 'warning')}
+                    disabled={actionLoading === user.id}
                   >
-                    {actionLoading === user.userId ? '처리중...' : '경고'}
+                    {actionLoading === user.id ? '처리중...' : '경고'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleAction(user.userId, 'softBlock')}
-                    disabled={actionLoading === user.userId}
+                    onClick={() => handleAction(user.id, 'softBlock')}
+                    disabled={actionLoading === user.id}
                   >
-                    {actionLoading === user.userId ? '처리중...' : '일시 차단'}
+                    {actionLoading === user.id ? '처리중...' : '일시 차단'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleAction(user.userId, 'restrictWriting')}
-                    disabled={actionLoading === user.userId}
+                    onClick={() => handleAction(user.id, 'restrictWriting')}
+                    disabled={actionLoading === user.id}
                   >
-                    {actionLoading === user.userId ? '처리중...' : '작성 제한'}
+                    {actionLoading === user.id ? '처리중...' : '작성 제한'}
                   </ActionButton>
                   <ActionButton
-                    onClick={() => handleAction(user.userId, 'permanentBan')}
-                    disabled={actionLoading === user.userId}
+                    onClick={() => handleAction(user.id, 'permanentBan')}
+                    disabled={actionLoading === user.id}
                   >
-                    {actionLoading === user.userId ? '처리중...' : '영구 차단'}
+                    {actionLoading === user.id ? '처리중...' : '영구 차단'}
                   </ActionButton>
                 </ActionButtons>
               </ReportCard>
