@@ -61,25 +61,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  // 개발용 임시 로그인 (실제 배포 시 제거)
-  const handleDevLogin = () => {
-    const mockToken = 'dev-token-' + Date.now();
-    localStorage.setItem('adminToken', mockToken);
-    localStorage.setItem('adminInfo', JSON.stringify({
-      id: 'admin1',
-      name: '개발자',
-      role: 'super_admin'
-    }));
-    onLoginSuccess(mockToken, {
-      id: 'admin1',
-      name: '개발자',
-      role: 'super_admin'
-    }).then(success => {
-      if (success) {
-        window.location.href = '/admin';
-      }
-    });
-  };
+
 
   return (
     <LoginContainer>
@@ -124,14 +106,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </LoginButton>
         </LoginForm>
 
-        <DevLoginSection>
-          <DevLoginButton type="button" onClick={handleDevLogin}>
-            🚀 개발자 모드 (임시 로그인)
-          </DevLoginButton>
-          <DevNote>
-            * 개발 중인 기능입니다. 실제 배포 시 제거하세요.
-          </DevNote>
-        </DevLoginSection>
+
 
         <Footer>
           <FooterText>
@@ -258,39 +233,7 @@ const LoginButton = styled.button`
   }
 `;
 
-const DevLoginSection = styled.div`
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border: 1px dashed #ff6b35;
-`;
 
-const DevLoginButton = styled.button`
-  width: 100%;
-  padding: 12px;
-  background: #17a2b8;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 10px;
-
-  &:hover {
-    background: #138496;
-    transform: translateY(-2px);
-  }
-`;
-
-const DevNote = styled.p`
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin: 0;
-  font-style: italic;
-`;
 
 const Footer = styled.div`
   border-top: 1px solid #e0e0e0;

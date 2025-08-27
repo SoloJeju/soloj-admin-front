@@ -5,6 +5,7 @@ import UserReportList from './UserReportList';
 import ContentReportList from './ContentReportList';
 import ReportReview from './ReportReview';
 import InquiryList from './InquiryList';
+import SystemStatus from './SystemStatus';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -13,7 +14,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
-    if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management', 'system-status'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, []);
@@ -35,7 +36,7 @@ const AdminDashboard: React.FC = () => {
         // URL에서 탭 정보 읽기
         const urlParams = new URLSearchParams(window.location.search);
         const tabFromUrl = urlParams.get('tab');
-        if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management'].includes(tabFromUrl)) {
+        if (tabFromUrl && ['dashboard', 'user-management', 'content-management', 'report-list', 'inquiry-management', 'system-status'].includes(tabFromUrl)) {
           setActiveTab(tabFromUrl);
         } else {
           setActiveTab('dashboard');
@@ -59,6 +60,8 @@ const AdminDashboard: React.FC = () => {
         return <ReportReview />;
       case 'inquiry-management':
         return <InquiryList />;
+      case 'system-status':
+        return <SystemStatus />;
       default:
         return <DashboardStats onTabChange={handleTabChange} />;
     }
@@ -115,6 +118,14 @@ const AdminDashboard: React.FC = () => {
         >
           <TabIcon>📝</TabIcon>
           <TabLabel>1:1 문의 관리</TabLabel>
+        </TabButton>
+        
+        <TabButton 
+          $active={activeTab === 'system-status'} 
+          onClick={() => handleTabChange('system-status')}
+        >
+          <TabIcon>⚙️</TabIcon>
+          <TabLabel>시스템 상태</TabLabel>
         </TabButton>
       </TabContainer>
 
@@ -240,6 +251,12 @@ const TabContainer = styled.div`
   overflow-y: hidden;
   justify-content: center; /* PC에서 중앙 정렬 */
   
+  /* 부드러운 스크롤 */
+  scroll-behavior: smooth;
+  
+  /* 터치 스크롤 개선 */
+  -webkit-overflow-scrolling: touch;
+  
   /* 모바일에서 스크롤바 숨기기 */
   &::-webkit-scrollbar {
     display: none;
@@ -247,16 +264,25 @@ const TabContainer = styled.div`
   -ms-overflow-style: none;
   scrollbar-width: none;
   
+  /* 모바일에서 줄바꿈 방지 */
+  flex-wrap: nowrap;
+  
   @media (max-width: 768px) {
-    padding: 15px 10px 0;
-    gap: 8px;
+    padding: 15px 15px 0;
+    gap: 15px;
     justify-content: flex-start; /* 모바일에서는 왼쪽 정렬 */
+    scroll-snap-type: x mandatory; /* 스크롤 스냅 추가 */
+    flex-wrap: nowrap; /* 줄바꿈 방지 */
+    min-width: 100%; /* 최소 너비 설정 */
   }
   
   @media (max-width: 480px) {
-    padding: 12px 8px 0;
-    gap: 6px;
+    padding: 12px 12px 0;
+    gap: 12px;
     justify-content: flex-start; /* 모바일에서는 왼쪽 정렬 */
+    scroll-snap-type: x mandatory; /* 스크롤 스냅 추가 */
+    flex-wrap: nowrap; /* 줄바꿈 방지 */
+    min-width: 100%; /* 최소 너비 설정 */
   }
 `;
 
@@ -284,17 +310,19 @@ const TabButton = styled.button<{ $active: boolean }>`
   }
   
   @media (max-width: 768px) {
-    padding: 18px 16px;
-    min-width: 90px;
-    gap: 8px;
-    flex: 1;
+    padding: 20px 20px;
+    min-width: 120px;
+    gap: 10px;
+    flex: 0 0 auto; /* 줄바꿈 방지, 고정 크기 */
+    scroll-snap-align: start; /* 스크롤 스냅 정렬 */
   }
   
   @media (max-width: 480px) {
-    padding: 16px 12px;
-    min-width: 80px;
-    gap: 6px;
-    flex: 1;
+    padding: 18px 16px;
+    min-width: 100px;
+    gap: 8px;
+    flex: 0 0 auto; /* 줄바꿈 방지, 고정 크기 */
+    scroll-snap-align: start; /* 스크롤 스냅 정렬 */
   }
 
   &:hover {
@@ -340,6 +368,7 @@ const TabLabel = styled.span`
   font-size: 0.9rem;
   white-space: nowrap;
   text-align: center;
+  line-height: 1.2;
   
   /* PC에서 더 크게 */
   @media (min-width: 769px) {
@@ -347,11 +376,13 @@ const TabLabel = styled.span`
   }
   
   @media (max-width: 768px) {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
   }
   
   @media (max-width: 480px) {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    line-height: 1.3;
   }
 `;
 

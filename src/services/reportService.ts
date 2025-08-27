@@ -2,14 +2,14 @@ import { apiGet, apiPatch, apiPost } from './api';
 
 export interface Report {
   id: string;
-  contentType: string;
+  contentType: 'post' | 'comment';
   contentId?: string;
   reportedUserId: string;
   reportedUserName: string;
   reporterId: string;
   reporterName: string;
-  reason: string;
-  status: string;
+  reason: 'spam' | 'abuse' | 'inappropriate' | 'other';
+  status: 'PENDING' | 'REVIEWED' | 'ACTION_TAKEN' | 'REJECTED';
   createdAt: string;
   contentTitle?: string | null;
   detailReason?: string;
@@ -28,9 +28,9 @@ export interface ReportListResponse {
 export interface ReportFilters {
   page?: number;
   limit?: number;
-  status?: string;
-  reason?: string;
-  type?: string;
+  status?: 'PENDING' | 'REVIEWED' | 'ACTION_TAKEN' | 'REJECTED' | 'all';
+  reason?: 'spam' | 'abuse' | 'inappropriate' | 'other' | 'all';
+  type?: 'post' | 'comment' | 'all';
   search?: string;
 }
 

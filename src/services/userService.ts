@@ -25,7 +25,7 @@ export interface UserFilters {
 }
 
 // 신고된 사용자 목록 조회
-export const getReportedUsers = async (filters: UserFilters = {}): Promise<any[]> => {
+export const getReportedUsers = async (filters: UserFilters = {}): Promise<any> => {
   const params: Record<string, any> = {};
   
   if (filters.page) params.page = filters.page;
@@ -35,19 +35,8 @@ export const getReportedUsers = async (filters: UserFilters = {}): Promise<any[]
   
   const response = await apiGet('/admin/users/reported', params);
   
-  // API 응답 구조에 따라 데이터 추출
-  if (response.result) {
-    // result가 배열로 직접 오는 경우
-    if (Array.isArray(response.result)) {
-      return response.result;
-    }
-    // result가 객체인 경우
-    return response.result;
-  } else if (response.users) {
-    return response;
-  } else {
-    return [];
-  }
+  // API 응답 구조에 맞게 전체 응답 반환
+  return response;
 };
 
 // 사용자 상세정보 조회

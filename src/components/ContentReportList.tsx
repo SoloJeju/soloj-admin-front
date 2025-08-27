@@ -559,6 +559,18 @@ const FilterSection = styled.div`
   flex-wrap: wrap;
   gap: 20px;
   align-items: end;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    gap: 15px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+    gap: 12px;
+  }
 `;
 
 const FilterGroup = styled.div`
@@ -594,6 +606,17 @@ const SearchGroup = styled.div`
   gap: 10px;
   flex: 1;
   min-width: 300px;
+  
+  @media (max-width: 768px) {
+    min-width: auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -630,6 +653,19 @@ const StatsBar = styled.div`
   gap: 20px;
   margin-bottom: 30px;
   justify-content: center;
+  
+  @media (max-width: 768px) {
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 const StatItem = styled.div`
@@ -718,6 +754,16 @@ const ReportCard = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
   }
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+    border-radius: 10px;
+  }
 `;
 
 const ContentInfo = styled.div`
@@ -769,13 +815,24 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const ActionButton = styled.button`
   padding: 8px 16px;
-  border: 2px solid #ff6b35;
+  border: 2px solid #e9ecef;
   background: white;
-  color: #ff6b35;
+  color: #6c757d;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -783,14 +840,26 @@ const ActionButton = styled.button`
   font-size: 0.85rem;
   
   &:hover:not(:disabled) {
-    background: #ff6b35;
+    background: #6c757d;
     color: white;
+    border-color: #6c757d;
     transform: translateY(-2px);
   }
   
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    width: 100%;
   }
 `;
 
@@ -803,8 +872,8 @@ const Pagination = styled.div`
 
 const PageButton = styled.button<{ $active?: boolean }>`
   padding: 10px 15px;
-  border: 2px solid ${props => props.$active ? '#ff6b35' : '#e9ecef'};
-  background: ${props => props.$active ? '#ff6b35' : 'white'};
+  border: 2px solid ${props => props.$active ? '#007bff' : '#e9ecef'};
+  background: ${props => props.$active ? '#007bff' : 'white'};
   color: ${props => props.$active ? 'white' : '#495057'};
   border-radius: 8px;
   font-weight: 600;
@@ -812,8 +881,8 @@ const PageButton = styled.button<{ $active?: boolean }>`
   transition: all 0.3s ease;
 
   &:hover:not(:disabled) {
-    border-color: #ff6b35;
-    background: #ff6b35;
+    border-color: #007bff;
+    background: #007bff;
     color: white;
     transform: translateY(-2px);
   }

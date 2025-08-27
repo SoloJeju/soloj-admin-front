@@ -4,12 +4,12 @@ export interface Report {
   reporterName: string;
   reportedUserId: string;
   reportedUserName: string;
-  contentType: 'user' | 'post' | 'comment' | 'room';
+  contentType: 'post' | 'comment';
   contentId?: string;
   contentTitle?: string;
   reason: ReportReason;
   detailReason?: string;
-  status: 'pending' | 'reviewed' | 'resolved';
+  status: 'PENDING' | 'REVIEWED' | 'ACTION_TAKEN' | 'REJECTED';
   createdAt: string;
   adminAction?: AdminAction;
   adminNote?: string;
@@ -18,8 +18,6 @@ export interface Report {
 export type ReportReason = 
   | 'spam'
   | 'abuse'
-  | 'illegal'
-  | 'scam'
   | 'inappropriate'
   | 'other';
 
@@ -71,6 +69,14 @@ export interface Inquiry {
 }
 
 export type InquiryCategory = 
+  // API enum 값들
+  | 'ACCOUNT'        // 계정 관련
+  | 'PAYMENT'        // 결제 관련
+  | 'GENERAL'        // 서비스 이용
+  | 'TECHNICAL'      // 기술적 문제
+  | 'REPORT'         // 신고 관련
+  | 'OTHER'          // 기타
+  // 기존 값들 (하위 호환성)
   | 'account'        // 계정 관련
   | 'payment'        // 결제 관련
   | 'service'        // 서비스 이용
@@ -79,12 +85,24 @@ export type InquiryCategory =
   | 'other';         // 기타
 
 export type InquiryStatus = 
+  // API enum 값들
+  | 'PENDING'        // 대기중
+  | 'IN_PROGRESS'    // 처리중
+  | 'REPLIED'        // 답변완료
+  | 'CLOSED'         // 종료
+  // 기존 값들 (하위 호환성)
   | 'pending'        // 대기중
   | 'inProgress'     // 처리중
   | 'answered'       // 답변완료
   | 'closed';        // 종료
 
 export type InquiryPriority = 
+  // API enum 값들
+  | 'LOW'            // 낮음
+  | 'NORMAL'         // 보통
+  | 'HIGH'           // 높음
+  | 'URGENT'         // 긴급
+  // 기존 값들 (하위 호환성)
   | 'low'            // 낮음
   | 'normal'         // 보통
   | 'high'           // 높음

@@ -8,9 +8,9 @@ const InquiryList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | InquiryStatus>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | InquiryCategory>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | InquiryPriority>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -25,40 +25,7 @@ const InquiryList: React.FC = () => {
     fetchInquiries();
   }, [currentPage, statusFilter, categoryFilter, priorityFilter, searchTerm]);
 
-  // API 명세에 맞게 상태값 변환
-  const convertStatusToApi = (status: string): string => {
-    switch (status) {
-      case 'pending': return 'PENDING';
-      case 'inProgress': return 'IN_PROGRESS';
-      case 'answered': return 'REPLIED';
-      case 'closed': return 'CLOSED';
-      default: return status.toUpperCase();
-    }
-  };
 
-  // API 명세에 맞게 카테고리값 변환
-  const convertCategoryToApi = (category: string): string => {
-    switch (category) {
-      case 'account': return 'ACCOUNT';
-      case 'payment': return 'PAYMENT';
-      case 'service': return 'GENERAL';
-      case 'technical': return 'TECHNICAL';
-      case 'safety': return 'REPORT';
-      case 'other': return 'OTHER';
-      default: return category.toUpperCase();
-    }
-  };
-
-  // API 명세에 맞게 우선순위값 변환
-  const convertPriorityToApi = (priority: string): string => {
-    switch (priority) {
-      case 'urgent': return 'URGENT';
-      case 'high': return 'HIGH';
-      case 'normal': return 'NORMAL';
-      case 'low': return 'LOW';
-      default: return priority.toUpperCase();
-    }
-  };
 
   const fetchInquiries = async () => {
     try {
@@ -67,9 +34,9 @@ const InquiryList: React.FC = () => {
       const filters = {
         page: currentPage,
         limit: 10,
-        status: statusFilter !== 'all' ? convertStatusToApi(statusFilter) : undefined,
-        category: categoryFilter !== 'all' ? convertCategoryToApi(categoryFilter) : undefined,
-        priority: priorityFilter !== 'all' ? convertPriorityToApi(priorityFilter) : undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        category: categoryFilter !== 'all' ? categoryFilter : undefined,
+        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
         search: searchTerm || undefined
       };
       
@@ -106,12 +73,10 @@ const InquiryList: React.FC = () => {
     fetchInquiries();
   };
 
-  const handleStatusChange = async (inquiryId: string, newStatus: string) => {
+  const handleStatusChange = async (inquiryId: string, newStatus: InquiryStatus) => {
     try {
       setActionLoading(inquiryId);
-      // API 명세에 맞게 상태값 변환
-      const apiStatus = convertStatusToApi(newStatus);
-      await updateInquiryStatus(inquiryId, { status: apiStatus });
+      await updateInquiryStatus(inquiryId, { status: newStatus });
       await fetchInquiries();
     } catch (err) {
       console.error('Status update error:', err);
@@ -183,6 +148,12 @@ const InquiryList: React.FC = () => {
 
   const getStatusColor = (status: InquiryStatus) => {
     switch (status) {
+      // API enum 값들
+      case 'PENDING': return '#ff6b35';
+      case 'IN_PROGRESS': return '#f7931e';
+      case 'REPLIED': return '#28a745';
+      case 'CLOSED': return '#6c757d';
+      // 기존 값들 (하위 호환성)
       case 'pending': return '#ff6b35';
       case 'inProgress': return '#f7931e';
       case 'answered': return '#28a745';
@@ -193,6 +164,12 @@ const InquiryList: React.FC = () => {
 
   const getPriorityColor = (priority: InquiryPriority) => {
     switch (priority) {
+      // API enum 값들
+      case 'URGENT': return '#dc3545';
+      case 'HIGH': return '#ff6b35';
+      case 'NORMAL': return '#f7931e';
+      case 'LOW': return '#28a745';
+      // 기존 값들 (하위 호환성)
       case 'urgent': return '#dc3545';
       case 'high': return '#ff6b35';
       case 'normal': return '#f7931e';
@@ -203,6 +180,14 @@ const InquiryList: React.FC = () => {
 
   const getCategoryLabel = (category: InquiryCategory) => {
     switch (category) {
+      // API enum 값들
+      case 'ACCOUNT': return '계정 관련';
+      case 'PAYMENT': return '결제 관련';
+      case 'GENERAL': return '서비스 이용';
+      case 'TECHNICAL': return '기술적 문제';
+      case 'REPORT': return '신고 관련';
+      case 'OTHER': return '기타';
+      // 기존 값들 (하위 호환성)
       case 'account': return '계정 관련';
       case 'payment': return '결제 관련';
       case 'service': return '서비스 이용';
@@ -215,6 +200,12 @@ const InquiryList: React.FC = () => {
 
   const getStatusLabel = (status: InquiryStatus) => {
     switch (status) {
+      // API enum 값들
+      case 'PENDING': return '대기중';
+      case 'IN_PROGRESS': return '처리중';
+      case 'REPLIED': return '답변완료';
+      case 'CLOSED': return '종료';
+      // 기존 값들 (하위 호환성)
       case 'pending': return '대기중';
       case 'inProgress': return '처리중';
       case 'answered': return '답변완료';
@@ -260,13 +251,13 @@ const InquiryList: React.FC = () => {
           <FilterLabel>상태:</FilterLabel>
           <FilterSelect 
             value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | InquiryStatus)}
           >
             <option value="all">전체</option>
-            <option value="pending">대기중</option>
-            <option value="inProgress">처리중</option>
-            <option value="answered">답변완료</option>
-            <option value="closed">종료</option>
+            <option value="PENDING">대기중</option>
+            <option value="IN_PROGRESS">처리중</option>
+            <option value="REPLIED">답변완료</option>
+            <option value="CLOSED">종료</option>
           </FilterSelect>
         </FilterGroup>
 
@@ -274,15 +265,15 @@ const InquiryList: React.FC = () => {
           <FilterLabel>카테고리:</FilterLabel>
           <FilterSelect 
             value={categoryFilter} 
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => setCategoryFilter(e.target.value as 'all' | InquiryCategory)}
           >
             <option value="all">전체</option>
-            <option value="account">계정 관련</option>
-            <option value="payment">결제 관련</option>
-            <option value="service">서비스 이용</option>
-            <option value="technical">기술적 문제</option>
-            <option value="safety">안전 관련</option>
-            <option value="other">기타</option>
+            <option value="ACCOUNT">계정 관련</option>
+            <option value="PAYMENT">결제 관련</option>
+            <option value="GENERAL">서비스 이용</option>
+            <option value="TECHNICAL">기술적 문제</option>
+            <option value="REPORT">신고 관련</option>
+            <option value="OTHER">기타</option>
           </FilterSelect>
         </FilterGroup>
 
@@ -290,13 +281,13 @@ const InquiryList: React.FC = () => {
           <FilterLabel>우선순위:</FilterLabel>
           <FilterSelect 
             value={priorityFilter} 
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onChange={(e) => setPriorityFilter(e.target.value as 'all' | InquiryPriority)}
           >
             <option value="all">전체</option>
-            <option value="urgent">긴급</option>
-            <option value="high">높음</option>
-            <option value="normal">보통</option>
-            <option value="low">낮음</option>
+            <option value="URGENT">긴급</option>
+            <option value="HIGH">높음</option>
+            <option value="NORMAL">보통</option>
+            <option value="LOW">낮음</option>
           </FilterSelect>
         </FilterGroup>
 
@@ -376,21 +367,21 @@ const InquiryList: React.FC = () => {
                   </ActionButton>
                   
                   <ActionButton
-                    onClick={() => handleStatusChange(inquiry.id, 'inProgress')}
+                    onClick={() => handleStatusChange(inquiry.id, 'IN_PROGRESS')}
                     disabled={actionLoading === inquiry.id}
                   >
                     처리중으로 변경
                   </ActionButton>
                   
                   <ActionButton
-                    onClick={() => handlePriorityChange(inquiry.id, 'high')}
+                    onClick={() => handlePriorityChange(inquiry.id, 'HIGH')}
                     disabled={actionLoading === inquiry.id}
                   >
                     우선순위 높임
                   </ActionButton>
                   
                   <ActionButton
-                    onClick={() => handleStatusChange(inquiry.id, 'closed')}
+                    onClick={() => handleStatusChange(inquiry.id, 'CLOSED')}
                     disabled={actionLoading === inquiry.id}
                   >
                     종료

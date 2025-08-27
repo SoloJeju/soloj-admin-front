@@ -35,7 +35,7 @@ const Header: React.FC = () => {
 
 const HeaderContainer = styled.header`
   background: #fff;
-  border-bottom: 2px solid #ff6b35;
+  border-bottom: 2px solid #e9ecef;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;

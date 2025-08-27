@@ -3,11 +3,13 @@ import styled from 'styled-components';
 import { getReportedUsers, updateUserStatus, applyUserAction, getUserDetail } from '../services/userService';
 
 const UserReportList: React.FC = () => {
+  console.log('UserReportList 컴포넌트 렌더링 시작');
+  
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -24,29 +26,42 @@ const UserReportList: React.FC = () => {
   const [userDetailLoading, setUserDetailLoading] = useState(false);
 
   useEffect(() => {
+    console.log('UserReportList useEffect 실행됨 - currentPage:', currentPage, 'statusFilter:', statusFilter, 'searchTerm:', searchTerm);
     fetchUserReports();
   }, [currentPage, statusFilter, searchTerm]);
 
   const fetchUserReports = async () => {
     try {
+      console.log('fetchUserReports 함수 시작');
       setLoading(true);
-      const response = await getReportedUsers({
+      const response: any = await getReportedUsers({
         page: currentPage,
-        limit: 10,
+        limit: 20,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         search: searchTerm || undefined
       });
       
-      // API 응답이 배열로 직접 오는 경우 처리
-      setReports(response || []);
-      setTotalPages(1);
-      setTotalItems(response?.length || 0);
+      console.log('API 응답:', response); // 디버깅용
+      
+      // API 응답 구조에 맞게 처리 (result 배열 포함)
+      if (response && response.result && Array.isArray(response.result)) {
+        console.log('사용자 목록:', response.result); // 디버깅용
+        setReports(response.result);
+        setTotalPages(Math.ceil(response.result.length / 20));
+        setTotalItems(response.result.length);
+      } else {
+        console.log('응답 데이터가 올바르지 않음:', response); // 디버깅용
+        setReports([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      }
       setError(null);
     } catch (err) {
       console.error('User reports fetch error:', err);
       setError('사용자 신고 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+      console.log('fetchUserReports 함수 완료');
     }
   };
 
@@ -204,10 +219,9 @@ const UserReportList: React.FC = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">전체</option>
-            <option value="normal">정상</option>
-            <option value="softBlocked">일시 차단</option>
-            <option value="restricted">제한됨</option>
-            <option value="banned">영구 차단</option>
+            <option value="normal">정상 상태</option>
+            <option value="restricted">제한된 상태</option>
+            <option value="banned">차단된 상태</option>
           </FilterSelect>
         </FilterGroup>
 
@@ -238,11 +252,17 @@ const UserReportList: React.FC = () => {
         <>
           <ReportList>
             {reports.map((user: any) => (
-              <ReportCard key={user.userId}>
+              <ReportCard 
+                key={user.userId}
+                onClick={() => {
+                  console.log('신고 목록 클릭됨:', user.userName, 'userId:', user.userId);
+                  handleUserDetailView(user.userId.toString());
+                }}
+              >
                 <UserInfo>
-                  <ClickableUserName onClick={() => handleUserDetailView(user.userId.toString())}>
+                  <UserName>
                     {user.userName || '이름 없음'}
-                  </ClickableUserName>
+                  </UserName>
                   <UserStatus status={user.currentStatus || 'unknown'}>
                     {getStatusText(user.currentStatus)}
                   </UserStatus>
@@ -278,7 +298,7 @@ const UserReportList: React.FC = () => {
                     onClick={() => handleAction(user.userId.toString(), 'softBlock')}
                     disabled={actionLoading === user.userId.toString()}
                   >
-                    {actionLoading === user.userId.toString() ? '처리중...' : '임시 차단'}
+                    {actionLoading === user.userId.toString() ? '처리중...' : '일시 차단'}
                   </ActionButton>
                   <ActionButton
                     onClick={() => handleAction(user.userId.toString(), 'restrictWriting')}
@@ -580,9 +600,9 @@ const UserReportList: React.FC = () => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'normal': return '정상';
-    case 'restricted': return '제한됨';
-    case 'banned': return '영구 차단';
+    case 'normal': return '정상 상태';
+    case 'restricted': return '제한된 상태';
+    case 'banned': return '차단된 상태';
     case 'active': return '활성';
     case 'inactive': return '비활성';
     case 'softBlocked': return '일시 차단';
@@ -592,12 +612,12 @@ const getStatusText = (status: string) => {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'normal': return '#28a745'; // 초록
-    case 'restricted': return '#ffc107'; // 노랑
-    case 'banned': return '#dc3545'; // 빨강
-    case 'active': return '#28a745'; // 초록
-    case 'inactive': return '#dc3545'; // 빨강
-    case 'softBlocked': return '#fd7e14'; // 주황
+    case 'normal': return '#28a745'; // 초록 - 정상 상태
+    case 'restricted': return '#ffc107'; // 노랑 - 제한된 상태
+    case 'banned': return '#dc3545'; // 빨강 - 차단된 상태
+    case 'active': return '#28a745'; // 초록 - 활성
+    case 'inactive': return '#dc3545'; // 빨강 - 비활성
+    case 'softBlocked': return '#fd7e14'; // 주황 - 일시 차단
     default: return '#6c757d'; // 회색
   }
 };
@@ -605,7 +625,7 @@ const getStatusColor = (status: string) => {
 const getActionLabel = (actionType: string) => {
   switch (actionType) {
     case 'warning': return '경고';
-    case 'softBlock': return '임시 차단단';
+    case 'softBlock': return '일시 차단단';
     case 'restrictWriting': return '작성 제한';
     case 'permanentBan': return '영구 정지';
     case 'restore': return '복구';
@@ -648,6 +668,18 @@ const FilterSection = styled.div`
   flex-wrap: wrap;
   gap: 20px;
   align-items: end;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    gap: 15px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+    gap: 12px;
+  }
 `;
 
 const FilterGroup = styled.div`
@@ -674,7 +706,7 @@ const FilterSelect = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: #e9ecef;
   }
 `;
 
@@ -683,6 +715,17 @@ const SearchGroup = styled.div`
   gap: 10px;
   flex: 1;
   min-width: 300px;
+  
+  @media (max-width: 768px) {
+    min-width: auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -695,7 +738,7 @@ const SearchInput = styled.input`
 
   &:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: #e9ecef;
   }
 `;
 
@@ -719,6 +762,19 @@ const StatsBar = styled.div`
   gap: 20px;
   margin-bottom: 30px;
   justify-content: center;
+  
+  @media (max-width: 768px) {
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 const StatItem = styled.div`
@@ -812,10 +868,27 @@ const ReportCard = styled.div`
   padding: 25px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
   
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+    border-color: #007bff;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+    border-radius: 10px;
   }
 `;
 
@@ -879,13 +952,24 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const ActionButton = styled.button`
   padding: 8px 16px;
-  border: 2px solid #ff6b35;
+  border: 2px solid #e9ecef;
   background: white;
-  color: #ff6b35;
+  color: #6c757d;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -893,14 +977,26 @@ const ActionButton = styled.button`
   font-size: 0.85rem;
   
   &:hover:not(:disabled) {
-    background: #ff6b35;
+    background: #6c757d;
     color: white;
+    border-color: #6c757d;
     transform: translateY(-2px);
   }
   
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    width: 100%;
   }
 `;
 
@@ -1047,8 +1143,8 @@ const ModalInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #ff6b35;
-    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+    border-color: #ced4da;
+    box-shadow: none;
   }
 `;
 
@@ -1063,8 +1159,8 @@ const ModalTextarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #ff6b35;
-    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+    border-color: #ced4da;
+    box-shadow: none;
   }
 `;
 
