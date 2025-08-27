@@ -11,12 +11,28 @@ const Header: React.FC = () => {
     }
   };
 
+  const handleTitleClick = () => {
+    // 대시보드 탭으로 이동
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'dashboard');
+    window.history.pushState({ tab: 'dashboard' }, '', url.toString());
+    
+    // 대시보드 헤더 섹션으로 스크롤
+    const dashboardHeader = document.getElementById('dashboard-header');
+    if (dashboardHeader) {
+      dashboardHeader.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // AdminDashboard의 탭 변경을 트리거하기 위해 popstate 이벤트 발생
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { tab: 'dashboard' } }));
+  };
+
   return (
     <HeaderContainer>
       <HeaderContent>
         <LogoSection>
-          <Logo>🍊</Logo>
-          <Title>혼자옵서예</Title>
+          <Logo onClick={handleTitleClick}>🍊</Logo>
+          <Title onClick={handleTitleClick}>혼자옵서예</Title>
         </LogoSection>
         
         <UserSection>
@@ -60,6 +76,17 @@ const LogoSection = styled.div`
 
 const Logo = styled.div`
   font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(1);
+  }
 `;
 
 const Title = styled.h1`
@@ -67,6 +94,18 @@ const Title = styled.h1`
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+
+  &:hover {
+    color: #e55a2b;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(1);
+  }
 `;
 
 const UserSection = styled.div`

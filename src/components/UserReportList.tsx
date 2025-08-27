@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import { getReportedUsers, updateUserStatus, applyUserAction, getUserDetail } from '../services/userService';
 
 const UserReportList: React.FC = () => {
-  console.log('UserReportList 컴포넌트 렌더링 시작');
   
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,13 +25,11 @@ const UserReportList: React.FC = () => {
   const [userDetailLoading, setUserDetailLoading] = useState(false);
 
   useEffect(() => {
-    console.log('UserReportList useEffect 실행됨 - currentPage:', currentPage, 'statusFilter:', statusFilter, 'searchTerm:', searchTerm);
     fetchUserReports();
   }, [currentPage, statusFilter, searchTerm]);
 
   const fetchUserReports = async () => {
     try {
-      console.log('fetchUserReports 함수 시작');
       setLoading(true);
       const response: any = await getReportedUsers({
         page: currentPage,
@@ -41,16 +38,12 @@ const UserReportList: React.FC = () => {
         search: searchTerm || undefined
       });
       
-      console.log('API 응답:', response); // 디버깅용
-      
       // API 응답 구조에 맞게 처리 (result 배열 포함)
       if (response && response.result && Array.isArray(response.result)) {
-        console.log('사용자 목록:', response.result); // 디버깅용
         setReports(response.result);
         setTotalPages(Math.ceil(response.result.length / 20));
         setTotalItems(response.result.length);
       } else {
-        console.log('응답 데이터가 올바르지 않음:', response); // 디버깅용
         setReports([]);
         setTotalPages(1);
         setTotalItems(0);
@@ -61,7 +54,6 @@ const UserReportList: React.FC = () => {
       setError('사용자 신고 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
-      console.log('fetchUserReports 함수 완료');
     }
   };
 
@@ -161,10 +153,7 @@ const UserReportList: React.FC = () => {
       setUserDetailLoading(true);
       setUserDetailModal({ open: true, userId });
       
-      console.log('사용자 상세조회 요청 ID:', userId);
-      
       const detail = await getUserDetail(userId);
-      console.log('사용자 상세조회 응답:', detail);
       
       setUserDetail(detail);
     } catch (err) {
@@ -255,7 +244,6 @@ const UserReportList: React.FC = () => {
               <ReportCard 
                 key={user.userId}
                 onClick={() => {
-                  console.log('신고 목록 클릭됨:', user.userName, 'userId:', user.userId);
                   handleUserDetailView(user.userId.toString());
                 }}
               >

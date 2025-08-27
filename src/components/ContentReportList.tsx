@@ -34,18 +34,15 @@ const ContentReportList: React.FC = () => {
         search: searchTerm || undefined
       };
       
-      console.log('필터링 요청:', filters); // 디버깅용
       
       const response = await getReportedContent(filters);
-      
-      console.log('필터링 응답:', response); // 디버깅용
+  
       
       setReports(response.contents || []);
       setTotalPages(response.pagination?.totalPages || 1);
       setTotalItems(response.pagination?.totalItems || 0);
       setError(null);
     } catch (err) {
-      console.error('Content reports fetch error:', err);
       setError('콘텐츠 신고 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -60,7 +57,6 @@ const ContentReportList: React.FC = () => {
   const handleStatusChange = async (contentId: string, contentType: string, newStatus: string) => {
     try {
       setActionLoading(contentId);
-      console.log('상태 변경 요청:', { contentId, contentType, newStatus }); // 디버깅용
       await updateContentStatus(contentId, contentType, newStatus, '관리자에 의한 상태 변경');
       await fetchContentReports(); // 목록 새로고침
       alert('상태가 성공적으로 변경되었습니다.');
@@ -75,7 +71,6 @@ const ContentReportList: React.FC = () => {
   const handleAction = async (contentId: string, contentType: string, actionType: string) => {
     try {
       setActionLoading(contentId);
-      console.log('조치 적용 요청:', { contentId, contentType, actionType }); // 디버깅용
       await applyContentAction(contentId, contentType, {
         actionType: actionType as 'hide' | 'show' | 'delete' | 'restore',
         reason: '관리자에 의한 조치'
@@ -99,31 +94,15 @@ const ContentReportList: React.FC = () => {
       const currentContent = reports.find((content: any) => content.contentId === contentId);
       setSelectedContent(currentContent);
       
-      console.log('상세조회 요청 ID:', contentId, '타입:', contentType); // 디버깅용
-      console.log('현재 선택된 콘텐츠:', currentContent); // 디버깅용
-      
       let detail;
-      console.log('contentType 확인:', contentType, '타입:', typeof contentType); // 디버깅용
       if (contentType === 'comment') {
-        console.log('댓글 상세조회 시작'); // 디버깅용
         // 댓글 상세조회
         detail = await getCommentDetail(contentId);
-        console.log('댓글 상세조회 응답:', detail); // 디버깅용
       } else {
-        console.log('게시글 상세조회 시작'); // 디버깅용
         // 게시글 상세조회
         detail = await getPostDetail(contentId);
-        console.log('게시글 상세조회 응답:', detail); // 디버깅용
       }
       
-      console.log('응답 구조 확인:', {
-        title: detail?.title,
-        authorNickname: detail?.authorNickname,
-        status: detail?.status,
-        comments: detail?.comments,
-        content: detail?.content,
-        postMeta: detail?.postMeta
-      }); // 디버깅용
       setContentDetail(detail);
     } catch (err) {
       console.error('Detail fetch error:', err);

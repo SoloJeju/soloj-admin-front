@@ -30,9 +30,6 @@ export const apiCall = async (
   
   const url = `${baseUrl}${endpoint}`;
   
-  console.log('API 요청 URL:', url); // 디버깅용
-  console.log('API 요청 헤더:', getHeaders()); // 디버깅용
-  
   try {
     const response = await fetch(url, {
       ...options,
@@ -77,9 +74,6 @@ export const apiGet = (endpoint: string, params?: Record<string, any>) => {
       url = `${endpoint}?${queryString}`;
     }
   }
-
-  console.log('GET 요청 파라미터:', params); // 디버깅용
-  console.log('최종 URL:', url); // 디버깅용
 
   return apiCall(url);
 };

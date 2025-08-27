@@ -56,11 +56,7 @@ export const getInquiries = async (filters: InquiryFilters = {}): Promise<Inquir
   if (filters.priority && filters.priority !== 'all') params.priority = filters.priority;
   if (filters.search) params.search = filters.search;
   
-  console.log('API 요청 파라미터:', params); // 디버깅용
-  
   const response = await apiGet('/admin/inquiries', params);
-  
-  console.log('API 응답:', response); // 디버깅용
   
   // API 응답 구조에 따라 데이터 추출
   if (response.result && response.result.inquiries) {

@@ -86,9 +86,7 @@ export const applyContentAction = async (contentId: string, contentType: string,
 
 // 관리자용 게시글 상세 조회 (숨김/삭제된 콘텐츠도 조회 가능)
 export const getPostDetail = async (postId: string) => {
-  console.log('getPostDetail 호출됨, postId:', postId); // 디버깅용
   const response = await apiGet(`/admin/community/posts/${postId}`);
-  console.log('getPostDetail API 응답:', response); // 디버깅용
   
   // API 응답 구조에 따라 데이터 추출
   if (response.result) {
@@ -102,9 +100,7 @@ export const getPostDetail = async (postId: string) => {
 
 // 관리자용 댓글 상세 조회 (댓글 정보와 게시글 맥락 포함)
 export const getCommentDetail = async (commentId: string) => {
-  console.log('getCommentDetail 호출됨, commentId:', commentId); // 디버깅용
   const response = await apiGet(`/admin/community/comments/${commentId}`);
-  console.log('getCommentDetail API 응답:', response); // 디버깅용
   
   // API 응답 구조에 따라 데이터 추출
   if (response.result) {

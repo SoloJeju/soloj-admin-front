@@ -102,27 +102,12 @@ const ReportReview: React.FC = () => {
       setDetailLoading(true);
       setContentDetailModal({ open: true, contentId, contentType });
       
-      console.log('콘텐츠 상세조회 요청 ID:', contentId, '타입:', contentType);
-      
       let detail;
       if (contentType === 'comment') {
-        console.log('댓글 상세조회 시작');
         detail = await getCommentDetail(contentId);
-        console.log('댓글 상세조회 응답:', detail);
       } else {
-        console.log('게시글 상세조회 시작');
         detail = await getPostDetail(contentId);
-        console.log('게시글 상세조회 응답:', detail);
       }
-      
-      console.log('응답 구조 확인:', {
-        title: detail?.title,
-        authorNickname: detail?.authorNickname,
-        status: detail?.status,
-        comments: detail?.comments,
-        content: detail?.content,
-        postMeta: detail?.postMeta
-      });
       
       setContentDetail(detail);
     } catch (err) {
@@ -144,15 +129,11 @@ const ReportReview: React.FC = () => {
       setUserDetailLoading(true);
       setUserDetailModal({ open: true, userId, userType });
       
-      console.log('사용자 상세조회 요청 ID:', userId, '타입:', userType);
-      
       // API 호출 시도
       let detail;
       try {
         detail = await getUserDetail(userId);
-        console.log('사용자 상세조회 응답:', detail);
       } catch (apiError) {
-        console.log('API 호출 실패, 테스트 데이터 사용:', apiError);
         // API 실패 시 테스트 데이터 사용
         detail = {
           userName: `사용자 ${userId}`,

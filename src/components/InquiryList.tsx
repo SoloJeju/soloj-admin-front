@@ -40,8 +40,6 @@ const InquiryList: React.FC = () => {
         search: searchTerm || undefined
       };
       
-      console.log('필터링 파라미터:', filters); // 디버깅용
-      
       const response = await getInquiries(filters);
       
       // inquiryService의 InquirySummary를 types/report의 InquirySummary로 변환
@@ -128,9 +126,7 @@ const InquiryList: React.FC = () => {
       setDetailLoading(true);
       setDetailModal({ open: true, inquiryId });
       
-      console.log('상세조회 요청 ID:', inquiryId); // 디버깅용
       const detail = await getInquiryDetail(inquiryId);
-      console.log('상세조회 응답:', detail); // 디버깅용
       setInquiryDetail(detail);
     } catch (err) {
       console.error('Detail fetch error:', err);

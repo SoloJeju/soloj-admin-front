@@ -69,7 +69,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <DashboardContainer>
-      <Header>
+      <Header id="dashboard-header">
         <LogoSection>
           <LogoIcon>🍊</LogoIcon>
           <LogoText>
