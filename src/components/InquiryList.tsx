@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getInquiries, replyToInquiry, updateInquiryStatus, updateInquiryPriority, getInquiryDetail } from '../services/inquiryService';
+import { uploadFile, deleteFile } from '../services/fileService';
 import { InquirySummary, InquiryStatus, InquiryPriority, InquiryCategory } from '../types/report';
 
 const InquiryList: React.FC = () => {
@@ -20,6 +21,18 @@ const InquiryList: React.FC = () => {
   const [detailModal, setDetailModal] = useState<{ open: boolean; inquiryId: string | null }>({ open: false, inquiryId: null });
   const [inquiryDetail, setInquiryDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [fileUploadLoading, setFileUploadLoading] = useState(false);
+
+  // 문의카테고리 옵션들
+  const inquiryCategories = [
+    { value: 'ACCOUNT', label: '계정 관련' },
+    { value: 'PAYMENT', label: '결제 관련' },
+    { value: 'GENERAL', label: '서비스 이용' },
+    { value: 'TECHNICAL', label: '기술적 문제' },
+    { value: 'REPORT', label: '신고 관련' },
+    { value: 'OTHER', label: '기타' }
+  ];
 
   useEffect(() => {
     fetchInquiries();
@@ -140,6 +153,44 @@ const InquiryList: React.FC = () => {
   const closeDetailModal = () => {
     setDetailModal({ open: false, inquiryId: null });
     setInquiryDetail(null);
+  };
+
+  // 파일 업로드 처리
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      setFileUploadLoading(true);
+      const fileArray = Array.from(files);
+      
+      // 파일 업로드
+      for (const file of fileArray) {
+        await uploadFile(file);
+      }
+      
+      setUploadedFiles(prev => [...prev, ...fileArray]);
+      alert('파일이 성공적으로 업로드되었습니다.');
+    } catch (err) {
+      console.error('File upload error:', err);
+      alert('파일 업로드에 실패했습니다.');
+    } finally {
+      setFileUploadLoading(false);
+    }
+  };
+
+  // 파일 삭제 처리
+  const handleFileDelete = async (fileId: string) => {
+    try {
+      await deleteFile(fileId);
+      alert('파일이 성공적으로 삭제되었습니다.');
+      // 필요시 목록 새로고침
+      if (detailModal.open && detailModal.inquiryId) {
+        await handleDetailView(detailModal.inquiryId);
+      }
+    } catch (err) {
+      console.error('File delete error:', err);
+      alert('파일 삭제에 실패했습니다.');
+    }
   };
 
   const getStatusColor = (status: InquiryStatus) => {
@@ -264,12 +315,11 @@ const InquiryList: React.FC = () => {
             onChange={(e) => setCategoryFilter(e.target.value as 'all' | InquiryCategory)}
           >
             <option value="all">전체</option>
-            <option value="ACCOUNT">계정 관련</option>
-            <option value="PAYMENT">결제 관련</option>
-            <option value="GENERAL">서비스 이용</option>
-            <option value="TECHNICAL">기술적 문제</option>
-            <option value="REPORT">신고 관련</option>
-            <option value="OTHER">기타</option>
+            {inquiryCategories.map(category => (
+              <option key={category.value} value={category.value}>
+                {category.label}
+              </option>
+            ))}
           </FilterSelect>
         </FilterGroup>
 
@@ -392,6 +442,54 @@ const InquiryList: React.FC = () => {
                       onChange={(e) => setReplyText(e.target.value)}
                       rows={4}
                     />
+                    
+                    {/* 답변용 파일 업로드 */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#495057' 
+                      }}>
+                        답변 첨부 파일:
+                      </label>
+                      <div style={{ 
+                        border: '2px dashed #ced4da', 
+                        borderRadius: '6px', 
+                        padding: '15px', 
+                        textAlign: 'center',
+                        backgroundColor: '#f8f9fa'
+                      }}>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e.target.files)}
+                          disabled={fileUploadLoading}
+                          style={{ display: 'none' }}
+                          id={`reply-file-upload-${inquiry.id}`}
+                        />
+                        <label 
+                          htmlFor={`reply-file-upload-${inquiry.id}`}
+                          style={{
+                            cursor: 'pointer',
+                            display: 'inline-block',
+                            padding: '8px 16px',
+                            backgroundColor: fileUploadLoading ? '#6c757d' : '#28a745',
+                            color: 'white',
+                            borderRadius: '5px',
+                            fontSize: '0.9rem',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {fileUploadLoading ? '업로드 중...' : '파일 선택'}
+                        </label>
+                        <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6c757d' }}>
+                          답변에 첨부할 이미지를 선택하세요
+                        </p>
+                      </div>
+                    </div>
+                    
                     <ReplyActions>
                       <ReplyButton
                         onClick={() => handleReply(inquiry.id)}
@@ -493,6 +591,130 @@ const InquiryList: React.FC = () => {
                  <ContentSection>
                    <ContentLabel>문의 내용:</ContentLabel>
                    <ContentText>{inquiryDetail.content}</ContentText>
+                 </ContentSection>
+                 
+                 <ContentSection>
+                   <ContentLabel>첨부 이미지:</ContentLabel>
+                   {inquiryDetail.imageUrl ? (
+                     <div style={{ marginBottom: '15px' }}>
+                       <div style={{ marginBottom: '10px' }}>
+                         <strong>이미지명:</strong> {inquiryDetail.imageName || '이미지'}
+                       </div>
+                       <div style={{ marginBottom: '10px' }}>
+                         <img 
+                           src={inquiryDetail.imageUrl} 
+                           alt={inquiryDetail.imageName || '문의 이미지'}
+                           style={{
+                             maxWidth: '100%',
+                             maxHeight: '300px',
+                             borderRadius: '8px',
+                             border: '1px solid #e9ecef'
+                           }}
+                           onError={(e) => {
+                             e.currentTarget.style.display = 'none';
+                             const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                             if (nextElement) {
+                               nextElement.style.display = 'block';
+                             }
+                           }}
+                         />
+                         <div style={{ 
+                           display: 'none', 
+                           padding: '20px', 
+                           backgroundColor: '#f8f9fa', 
+                           borderRadius: '8px', 
+                           border: '1px solid #e9ecef',
+                           textAlign: 'center',
+                           color: '#6c757d'
+                         }}>
+                           이미지를 불러올 수 없습니다.
+                         </div>
+                       </div>
+                       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                         <a 
+                           href={inquiryDetail.imageUrl} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           style={{
+                             display: 'inline-block',
+                             padding: '8px 16px',
+                             backgroundColor: '#007bff',
+                             color: 'white',
+                             textDecoration: 'none',
+                             borderRadius: '5px',
+                             fontSize: '0.9rem'
+                           }}
+                         >
+                           새 창에서 보기
+                         </a>
+                         <button
+                           onClick={() => handleFileDelete(inquiryDetail.imageId || inquiryDetail.id)}
+                           style={{
+                             padding: '8px 16px',
+                             backgroundColor: '#dc3545',
+                             color: 'white',
+                             border: 'none',
+                             borderRadius: '5px',
+                             fontSize: '0.9rem',
+                             cursor: 'pointer'
+                           }}
+                         >
+                           파일 삭제
+                         </button>
+                       </div>
+                     </div>
+                   ) : (
+                     <div style={{
+                       padding: '15px',
+                       backgroundColor: '#f8f9fa',
+                       borderRadius: '8px',
+                       border: '1px solid #e9ecef',
+                       color: '#6c757d',
+                       textAlign: 'center'
+                     }}>
+                       첨부된 이미지가 없습니다.
+                     </div>
+                   )}
+                   
+                   {/* 파일 업로드 섹션 */}
+                   <div style={{ marginTop: '15px' }}>
+                     <ContentLabel>새 파일 업로드:</ContentLabel>
+                     <div style={{ 
+                       border: '2px dashed #ced4da', 
+                       borderRadius: '8px', 
+                       padding: '20px', 
+                       textAlign: 'center',
+                       backgroundColor: '#f8f9fa'
+                     }}>
+                       <input
+                         type="file"
+                         multiple
+                         accept="image/*"
+                         onChange={(e) => handleFileUpload(e.target.files)}
+                         disabled={fileUploadLoading}
+                         style={{ display: 'none' }}
+                         id="file-upload"
+                       />
+                       <label 
+                         htmlFor="file-upload"
+                         style={{
+                           cursor: 'pointer',
+                           display: 'block',
+                           padding: '10px',
+                           backgroundColor: fileUploadLoading ? '#6c757d' : '#007bff',
+                           color: 'white',
+                           borderRadius: '5px',
+                           fontSize: '0.9rem',
+                           fontWeight: '600'
+                         }}
+                       >
+                         {fileUploadLoading ? '업로드 중...' : '파일 선택'}
+                       </label>
+                       <p style={{ marginTop: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
+                         이미지 파일을 선택하여 업로드하세요
+                       </p>
+                     </div>
+                   </div>
                  </ContentSection>
                  
                  {inquiryDetail.adminReply && (
@@ -1036,6 +1258,70 @@ const ReplyText = styled.div`
 const ReplyDate = styled.div`
   font-size: 0.9rem;
   color: #6c757d;
+`;
+
+const FileUploadSection = styled.div`
+  margin-top: 15px;
+  padding: 15px;
+  border: 2px dashed #ced4da;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  text-align: center;
+`;
+
+const FileUploadButton = styled.label`
+  cursor: pointer;
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+`;
+
+const FileUploadText = styled.p`
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #6c757d;
+`;
+
+const FileActionButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &.view {
+    background-color: #007bff;
+    color: white;
+    
+    &:hover {
+      background-color: #0056b3;
+    }
+  }
+
+  &.delete {
+    background-color: #dc3545;
+    color: white;
+    
+    &:hover {
+      background-color: #c82333;
+    }
+  }
 `;
 
 export default InquiryList;

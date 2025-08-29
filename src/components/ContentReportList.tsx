@@ -119,6 +119,8 @@ const ContentReportList: React.FC = () => {
     setSelectedContent(null);
   };
 
+
+
   if (loading) {
     return (
       <Container>
@@ -446,6 +448,62 @@ const ContentReportList: React.FC = () => {
                           <ReportDetailLabel>현재 상태:</ReportDetailLabel>
                           <ReportDetailValue>{getStatusText(selectedContent.status)}</ReportDetailValue>
                         </ReportDetailItem>
+                        {selectedContent.imageUrl && (
+                          <ReportDetailItem>
+                            <ReportDetailLabel>첨부 이미지:</ReportDetailLabel>
+                            <ReportDetailValue>
+                              <div style={{ marginBottom: '10px' }}>
+                                <strong>이미지명:</strong> {selectedContent.imageName || '이미지'}
+                              </div>
+                              <div style={{ marginBottom: '10px' }}>
+                                <img 
+                                  src={selectedContent.imageUrl} 
+                                  alt={selectedContent.imageName || '신고 이미지'}
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '200px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e9ecef'
+                                  }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (nextElement) {
+                                      nextElement.style.display = 'block';
+                                    }
+                                  }}
+                                />
+                                <div style={{ 
+                                  display: 'none', 
+                                  padding: '15px', 
+                                  backgroundColor: '#f8f9fa', 
+                                  borderRadius: '8px', 
+                                  border: '1px solid #e9ecef',
+                                  textAlign: 'center',
+                                  color: '#6c757d'
+                                }}>
+                                  이미지를 불러올 수 없습니다.
+                                </div>
+                              </div>
+                              <a 
+                                href={selectedContent.imageUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '6px 12px',
+                                  backgroundColor: '#007bff',
+                                  color: 'white',
+                                  textDecoration: 'none',
+                                  borderRadius: '4px',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                새 창에서 보기
+                              </a>
+                            </ReportDetailValue>
+                          </ReportDetailItem>
+                        )}
                       </ReportDetails>
                     </ReportItem>
                   </ReportSection>
@@ -459,6 +517,8 @@ const ContentReportList: React.FC = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+
     </Container>
   );
 };
@@ -790,6 +850,8 @@ const DetailValue = styled.span`
   color: #6c757d;
 `;
 
+
+
 const ActionButtons = styled.div`
   display: flex;
   gap: 10px;
@@ -956,6 +1018,8 @@ const CloseButton = styled.button`
 const ModalBody = styled.div`
   padding: 20px;
 `;
+
+
 
 const DetailSection = styled.div`
   margin-bottom: 20px;

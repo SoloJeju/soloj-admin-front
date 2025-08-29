@@ -2,12 +2,18 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 // 공통 헤더
-const getHeaders = () => {
+const getHeaders = (isFormData: boolean = false) => {
   const token = localStorage.getItem('adminToken');
-  return {
-    'Content-Type': 'application/json',
+  const headers: Record<string, string> = {
     ...(token && { Authorization: `Bearer ${token}` }),
   };
+  
+  // FormData가 아닌 경우에만 Content-Type을 설정
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  return headers;
 };
 
 // 토큰 만료 시 자동 로그아웃
@@ -30,10 +36,13 @@ export const apiCall = async (
   
   const url = `${baseUrl}${endpoint}`;
   
+  // FormData인지 확인
+  const isFormData = options.body instanceof FormData;
+  
   try {
     const response = await fetch(url, {
       ...options,
-      headers: getHeaders(),
+      headers: getHeaders(isFormData),
     });
 
     if (!response.ok) {

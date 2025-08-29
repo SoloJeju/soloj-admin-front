@@ -1,5 +1,26 @@
 import { apiGet, apiPut } from './api';
 
+export interface Inquiry {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: string;
+  subject: string;
+  content: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  adminReply?: string;
+  adminReplyAt?: string;
+  adminId?: string;
+  adminName?: string;
+  attachments?: string[];
+  imageUrl?: string | null;
+  imageName?: string | null;
+}
+
 export interface InquirySummary {
   id: string;
   title: string;

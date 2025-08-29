@@ -13,6 +13,8 @@ export interface Report {
   createdAt: string;
   adminAction?: AdminAction;
   adminNote?: string;
+  imageUrl?: string | null;
+  imageName?: string | null;
 }
 
 export type ReportReason = 
@@ -66,6 +68,8 @@ export interface Inquiry {
   adminId?: string;
   adminName?: string;
   attachments?: string[];
+  imageUrl?: string | null;
+  imageName?: string | null;
 }
 
 export type InquiryCategory = 

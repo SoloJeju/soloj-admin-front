@@ -109,6 +109,16 @@ const ReportReview: React.FC = () => {
         detail = await getPostDetail(contentId);
       }
       
+      // 디버깅을 위한 콘솔 로그
+      console.log('Content detail response:', detail);
+      console.log('Image fields:', {
+        imageUrl: detail?.imageUrl,
+        imageName: detail?.imageName,
+        images: detail?.images,
+        attachments: detail?.attachments,
+        files: detail?.files
+      });
+      
       setContentDetail(detail);
     } catch (err) {
       console.error('Content detail fetch error:', err);
@@ -341,12 +351,30 @@ const ReportReview: React.FC = () => {
                                      <ReportItem 
               key={report.id} 
               onClick={() => {
-                if (report.contentId) {
-                  // 콘텐츠 신고인 경우 콘텐츠 상세정보 표시
-                  handleContentDetailView(report.contentId, report.contentType);
+                const isContentReport = (r: Report) => {
+                  const ct = (r.contentType || '').toLowerCase();
+                  const isContentType = ct === 'post' || ct === 'comment';
+                  const hasValidContentId =
+                    r.contentId !== null &&
+                    r.contentId !== undefined &&
+                    String(r.contentId).trim() !== '' &&
+                    String(r.contentId).toLowerCase() !== 'null' &&
+                    String(r.contentId).toLowerCase() !== 'undefined' &&
+                    String(r.contentId) !== '0'; // 백엔드가 0을 넣는 케이스 방지용(필요 시 유지/삭제)
+                
+                  return isContentType && hasValidContentId;
+                };
+                
+                if (isContentReport(report)) {
+                  handleContentDetailView(String(report.contentId), report.contentType);
+                } else if (report.reportedUserId) {
+                  handleUserDetailView(report.reportedUserId, 'reported');
+                } else {
+                  // 콘텐츠도, 유저도 아닌 신고(순수 사용자 신고 상세를 보여주고 싶다면)
+                  handleUserReportDetailView(report);
                 }
               }}
-              $clickable={!!report.contentId}
+              $clickable={!!report.contentId || !!report.reportedUserId}
             >
                <ReportHeader>
                 <ReportInfo>
@@ -535,11 +563,362 @@ const ReportReview: React.FC = () => {
                        padding: '15px',
                        backgroundColor: '#f8f9fa',
                        borderRadius: '8px',
-                       border: '1px solid #e9ecef'
+                       border: '1px solid #e9ecef',
+                       maxHeight: '300px',
+                       overflowY: 'auto',
+                       wordBreak: 'break-word'
                      }}>
                        {contentDetail.content}
                      </ModalDetailValue>
                    </ModalSection>
+
+                   {/* 첨부 이미지 */}
+                   {(contentDetail.imageUrl || contentDetail.attachments || contentDetail.files || contentDetail.images) && (
+                     <ModalSection>
+                       <ModalLabel>첨부 이미지:</ModalLabel>
+                       <ModalDetailValue>
+                         {/* 단일 이미지 */}
+                         {contentDetail.imageUrl && (
+                           <div style={{ marginBottom: '15px' }}>
+                             <div style={{ marginBottom: '10px' }}>
+                               <strong>이미지명:</strong> {contentDetail.imageName || '이미지'}
+                             </div>
+                             <div style={{ marginBottom: '10px' }}>
+                               <img 
+                                 src={contentDetail.imageUrl} 
+                                 alt={contentDetail.imageName || '콘텐츠 이미지'}
+                                 style={{
+                                   maxWidth: '100%',
+                                   maxHeight: '400px',
+                                   borderRadius: '8px',
+                                   border: '1px solid #e9ecef',
+                                   objectFit: 'contain'
+                                 }}
+                                 onError={(e) => {
+                                   const target = e.currentTarget;
+                                   target.style.display = 'none';
+                                   const errorDiv = target.nextElementSibling as HTMLElement;
+                                   if (errorDiv) {
+                                     errorDiv.style.display = 'block';
+                                   }
+                                 }}
+                               />
+                               <div style={{ 
+                                 display: 'none', 
+                                 padding: '20px', 
+                                 backgroundColor: '#f8f9fa', 
+                                 borderRadius: '8px', 
+                                 border: '1px solid #e9ecef',
+                                 textAlign: 'center',
+                                 color: '#6c757d',
+                                 minHeight: '100px',
+                                 alignItems: 'center',
+                                 justifyContent: 'center'
+                               }}>
+                                 <div>
+                                   <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🖼️</div>
+                                   이미지를 불러올 수 없습니다.
+                                 </div>
+                               </div>
+                             </div>
+                             <a 
+                               href={contentDetail.imageUrl} 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               style={{
+                                 display: 'inline-block',
+                                 padding: '8px 16px',
+                                 backgroundColor: '#007bff',
+                                 color: 'white',
+                                 textDecoration: 'none',
+                                 borderRadius: '5px',
+                                 fontSize: '0.9rem'
+                               }}
+                             >
+                               새 창에서 보기
+                             </a>
+                           </div>
+                         )}
+
+                         {/* 이미지 배열 */}
+                         {contentDetail.images && contentDetail.images.length > 0 && (
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                             {contentDetail.images.map((image: any, index: number) => (
+                               <div key={index} style={{ marginBottom: '15px' }}>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <strong>이미지 {index + 1}:</strong> {image.name || image.fileName || `이미지 ${index + 1}`}
+                                 </div>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <img 
+                                     src={image.url || image.imageUrl || image.fileUrl} 
+                                     alt={image.name || image.fileName || `이미지 ${index + 1}`}
+                                     style={{
+                                       maxWidth: '100%',
+                                       maxHeight: '300px',
+                                       borderRadius: '8px',
+                                       border: '1px solid #e9ecef',
+                                       objectFit: 'contain'
+                                     }}
+                                     onError={(e) => {
+                                       const target = e.currentTarget;
+                                       target.style.display = 'none';
+                                       const errorDiv = target.nextElementSibling as HTMLElement;
+                                       if (errorDiv) {
+                                         errorDiv.style.display = 'block';
+                                       }
+                                     }}
+                                   />
+                                   <div style={{ 
+                                     display: 'none', 
+                                     padding: '20px', 
+                                     backgroundColor: '#f8f9fa', 
+                                     borderRadius: '8px', 
+                                     border: '1px solid #e9ecef',
+                                     textAlign: 'center',
+                                     color: '#6c757d',
+                                     minHeight: '100px',
+                                     alignItems: 'center',
+                                     justifyContent: 'center'
+                                   }}>
+                                     <div>
+                                       <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🖼️</div>
+                                       이미지를 불러올 수 없습니다.
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <a 
+                                   href={image.url || image.imageUrl || image.fileUrl} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   style={{
+                                     display: 'inline-block',
+                                     padding: '6px 12px',
+                                     backgroundColor: '#007bff',
+                                     color: 'white',
+                                     textDecoration: 'none',
+                                     borderRadius: '4px',
+                                     fontSize: '0.8rem'
+                                   }}
+                                 >
+                                   새 창에서 보기
+                                 </a>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         {/* 첨부파일 배열 (이미지만 필터링) */}
+                         {contentDetail.attachments && contentDetail.attachments.length > 0 && (
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                             {contentDetail.attachments
+                               .filter((file: any) => file.type?.startsWith('image/') || file.mimeType?.startsWith('image/'))
+                               .map((file: any, index: number) => (
+                               <div key={index} style={{ marginBottom: '15px' }}>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <strong>이미지 {index + 1}:</strong> {file.name || file.fileName || `이미지 ${index + 1}`}
+                                 </div>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <img 
+                                     src={file.url || file.fileUrl || file.downloadUrl} 
+                                     alt={file.name || file.fileName || `이미지 ${index + 1}`}
+                                     style={{
+                                       maxWidth: '100%',
+                                       maxHeight: '300px',
+                                       borderRadius: '8px',
+                                       border: '1px solid #e9ecef',
+                                       objectFit: 'contain'
+                                     }}
+                                     onError={(e) => {
+                                       const target = e.currentTarget;
+                                       target.style.display = 'none';
+                                       const errorDiv = target.nextElementSibling as HTMLElement;
+                                       if (errorDiv) {
+                                         errorDiv.style.display = 'block';
+                                       }
+                                     }}
+                                   />
+                                   <div style={{ 
+                                     display: 'none', 
+                                     padding: '20px', 
+                                     backgroundColor: '#f8f9fa', 
+                                     borderRadius: '8px', 
+                                     border: '1px solid #e9ecef',
+                                     textAlign: 'center',
+                                     color: '#6c757d',
+                                     minHeight: '100px',
+                                     alignItems: 'center',
+                                     justifyContent: 'center'
+                                   }}>
+                                     <div>
+                                       <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🖼️</div>
+                                       이미지를 불러올 수 없습니다.
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <a 
+                                   href={file.url || file.fileUrl || file.downloadUrl} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   style={{
+                                     display: 'inline-block',
+                                     padding: '6px 12px',
+                                     backgroundColor: '#007bff',
+                                     color: 'white',
+                                     textDecoration: 'none',
+                                     borderRadius: '4px',
+                                     fontSize: '0.8rem'
+                                   }}
+                                 >
+                                   새 창에서 보기
+                                 </a>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         {/* 파일 배열 (이미지만 필터링) */}
+                         {contentDetail.files && contentDetail.files.length > 0 && (
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                             {contentDetail.files
+                               .filter((file: any) => file.type?.startsWith('image/') || file.mimeType?.startsWith('image/'))
+                               .map((file: any, index: number) => (
+                               <div key={index} style={{ marginBottom: '15px' }}>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <strong>이미지 {index + 1}:</strong> {file.name || file.fileName || `이미지 ${index + 1}`}
+                                 </div>
+                                 <div style={{ marginBottom: '10px' }}>
+                                   <img 
+                                     src={file.url || file.fileUrl || file.downloadUrl} 
+                                     alt={file.name || file.fileName || `이미지 ${index + 1}`}
+                                     style={{
+                                       maxWidth: '100%',
+                                       maxHeight: '300px',
+                                       borderRadius: '8px',
+                                       border: '1px solid #e9ecef',
+                                       objectFit: 'contain'
+                                     }}
+                                     onError={(e) => {
+                                       const target = e.currentTarget;
+                                       target.style.display = 'none';
+                                       const errorDiv = target.nextElementSibling as HTMLElement;
+                                       if (errorDiv) {
+                                         errorDiv.style.display = 'block';
+                                       }
+                                     }}
+                                   />
+                                   <div style={{ 
+                                     display: 'none', 
+                                     padding: '20px', 
+                                     backgroundColor: '#f8f9fa', 
+                                     borderRadius: '8px', 
+                                     border: '1px solid #e9ecef',
+                                     textAlign: 'center',
+                                     color: '#6c757d',
+                                     minHeight: '100px',
+                                     alignItems: 'center',
+                                     justifyContent: 'center'
+                                   }}>
+                                     <div>
+                                       <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🖼️</div>
+                                       이미지를 불러올 수 없습니다.
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <a 
+                                   href={file.url || file.fileUrl || file.downloadUrl} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   style={{
+                                     display: 'inline-block',
+                                     padding: '6px 12px',
+                                     backgroundColor: '#007bff',
+                                     color: 'white',
+                                     textDecoration: 'none',
+                                     borderRadius: '4px',
+                                     fontSize: '0.8rem'
+                                   }}
+                                 >
+                                   새 창에서 보기
+                                 </a>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                       </ModalDetailValue>
+                     </ModalSection>
+                   )}
+
+                   {/* 이미지 목록 (여러 개인 경우) */}
+                   {contentDetail.images && contentDetail.images.length > 0 && (
+                     <ModalSection>
+                       <ModalLabel>첨부 이미지들:</ModalLabel>
+                       <ModalDetailValue>
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                           {contentDetail.images.map((image: any, index: number) => (
+                             <div key={index} style={{ marginBottom: '15px' }}>
+                               <div style={{ marginBottom: '10px' }}>
+                                 <strong>이미지 {index + 1}:</strong> {image.name || `이미지 ${index + 1}`}
+                               </div>
+                               <div style={{ marginBottom: '10px' }}>
+                                 <img 
+                                   src={image.url} 
+                                   alt={image.name || `이미지 ${index + 1}`}
+                                   style={{
+                                     maxWidth: '100%',
+                                     maxHeight: '300px',
+                                     borderRadius: '8px',
+                                     border: '1px solid #e9ecef',
+                                     objectFit: 'contain'
+                                   }}
+                                   onError={(e) => {
+                                     const target = e.currentTarget;
+                                     target.style.display = 'none';
+                                     const errorDiv = target.nextElementSibling as HTMLElement;
+                                     if (errorDiv) {
+                                       errorDiv.style.display = 'block';
+                                     }
+                                   }}
+                                 />
+                                 <div style={{ 
+                                   display: 'none', 
+                                   padding: '20px', 
+                                   backgroundColor: '#f8f9fa', 
+                                   borderRadius: '8px', 
+                                   border: '1px solid #e9ecef',
+                                   textAlign: 'center',
+                                   color: '#6c757d',
+                                   minHeight: '80px',
+                                   alignItems: 'center',
+                                   justifyContent: 'center'
+                                 }}>
+                                   <div>
+                                     <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🖼️</div>
+                                     이미지를 불러올 수 없습니다.
+                                   </div>
+                                 </div>
+                               </div>
+                               <a 
+                                 href={image.url} 
+                                 target="_blank" 
+                                 rel="noopener noreferrer"
+                                 style={{
+                                   display: 'inline-block',
+                                   padding: '6px 12px',
+                                   backgroundColor: '#007bff',
+                                   color: 'white',
+                                   textDecoration: 'none',
+                                   borderRadius: '4px',
+                                   fontSize: '0.8rem'
+                                 }}
+                               >
+                                 새 창에서 보기
+                               </a>
+                             </div>
+                           ))}
+                         </div>
+                       </ModalDetailValue>
+                     </ModalSection>
+                   )}
 
                    {/* 댓글 목록 (게시글인 경우) */}
                    {contentDetail.comments && contentDetail.comments.length > 0 && (
@@ -894,6 +1273,76 @@ const ReportReview: React.FC = () => {
                     }}>
                       {userReportDetailModal.report.detailReason || '신고 내용이 없습니다.'}
                     </div>
+                  </ModalDetailValue>
+                </ModalSection>
+
+                <ModalSection>
+                  <ModalLabel>첨부 이미지:</ModalLabel>
+                  <ModalDetailValue>
+                    {userReportDetailModal.report.imageUrl ? (
+                      <div style={{ marginBottom: '15px' }}>
+                        <div style={{ marginBottom: '10px' }}>
+                          <strong>이미지명:</strong> {userReportDetailModal.report.imageName || '이미지'}
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                          <img 
+                            src={userReportDetailModal.report.imageUrl} 
+                            alt={userReportDetailModal.report.imageName || '신고 이미지'}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '300px',
+                              borderRadius: '8px',
+                              border: '1px solid #e9ecef'
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (nextElement) {
+                                nextElement.style.display = 'block';
+                              }
+                            }}
+                          />
+                          <div style={{ 
+                            display: 'none', 
+                            padding: '20px', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '8px', 
+                            border: '1px solid #e9ecef',
+                            textAlign: 'center',
+                            color: '#6c757d'
+                          }}>
+                            이미지를 불러올 수 없습니다.
+                          </div>
+                        </div>
+                        <a 
+                          href={userReportDetailModal.report.imageUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-block',
+                            padding: '8px 16px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            textDecoration: 'none',
+                            borderRadius: '5px',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          새 창에서 보기
+                        </a>
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: '15px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '8px',
+                        border: '1px solid #e9ecef',
+                        color: '#6c757d',
+                        textAlign: 'center'
+                      }}>
+                        첨부된 이미지가 없습니다.
+                      </div>
+                    )}
                   </ModalDetailValue>
                 </ModalSection>
 
@@ -1435,9 +1884,9 @@ const ModalContent = styled.div`
   background: white;
   border-radius: 20px;
   padding: 0;
-  max-width: 500px;
+  max-width: 800px;
   width: 90%;
-  max-height: 80vh;
+  max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 `;
@@ -1480,6 +1929,26 @@ const CloseButton = styled.button`
 
 const ModalBody = styled.div`
   padding: 30px;
+  max-height: calc(90vh - 80px);
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 `;
 
 const ModalSection = styled.div`
@@ -1600,8 +2069,27 @@ const CommentList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 15px;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
+  padding-right: 10px;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 `;
 
 const CommentItem = styled.div`

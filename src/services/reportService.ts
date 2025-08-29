@@ -13,6 +13,8 @@ export interface Report {
   createdAt: string;
   contentTitle?: string | null;
   detailReason?: string;
+  imageUrl?: string | null;
+  imageName?: string | null;
 }
 
 export interface ReportListResponse {
