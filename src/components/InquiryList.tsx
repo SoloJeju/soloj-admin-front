@@ -405,114 +405,124 @@ const InquiryList: React.FC = () => {
                 </InquiryDetails>
 
                 <ActionButtons>
-                  <ActionButton
-                    onClick={(e) => {
-                      e.stopPropagation(); // 상세보기 카드 onClick 막기
-                      setSelectedInquiry(inquiry.id);
-                    }}
-                    disabled={actionLoading === inquiry.id}
-                  >
-                    답변하기
-                  </ActionButton>
+  <ActionButton
+    onClick={(e) => {
+      e.stopPropagation(); // 상세보기 막기
+      setSelectedInquiry(inquiry.id);
+    }}
+    disabled={actionLoading === inquiry.id}
+  >
+    답변하기
+  </ActionButton>
 
-                  
-                    <ActionButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(inquiry.id, 'IN_PROGRESS');
-                      }}
-                      disabled={actionLoading === inquiry.id}
-                    >
-                      처리중으로 변경
-                    </ActionButton>
+  <ActionButton
+    onClick={(e) => {
+      e.stopPropagation(); // 상세보기 막기
+      handleStatusChange(inquiry.id, 'IN_PROGRESS');
+    }}
+    disabled={actionLoading === inquiry.id}
+  >
+    처리중으로 변경
+  </ActionButton>
 
-                  
-                  <ActionButton
-                    onClick={() => handlePriorityChange(inquiry.id, 'HIGH')}
-                    disabled={actionLoading === inquiry.id}
-                  >
-                    우선순위 높임
-                  </ActionButton>
-                  
-                  <ActionButton
-                    onClick={() => handleStatusChange(inquiry.id, 'CLOSED')}
-                    disabled={actionLoading === inquiry.id}
-                  >
-                    종료
-                  </ActionButton>
-                </ActionButtons>
+  <ActionButton
+    onClick={(e) => {
+      e.stopPropagation(); // 상세보기 막기
+      handlePriorityChange(inquiry.id, 'HIGH');
+    }}
+    disabled={actionLoading === inquiry.id}
+  >
+    우선순위 높임
+  </ActionButton>
 
-                {selectedInquiry === inquiry.id && (
-                  <ReplySection>
-                    <ReplyTextarea
-                      placeholder="답변 내용을 입력하세요..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      rows={4}
-                    />
-                    
-                    {/* 답변용 파일 업로드 */}
-                    <div style={{ marginBottom: '15px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600', 
-                        color: '#495057' 
-                      }}>
-                        답변 첨부 파일:
-                      </label>
-                      <div style={{ 
-                        border: '2px dashed #ced4da', 
-                        borderRadius: '6px', 
-                        padding: '15px', 
-                        textAlign: 'center',
-                        backgroundColor: '#f8f9fa'
-                      }}>
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(e.target.files)}
-                          disabled={fileUploadLoading}
-                          style={{ display: 'none' }}
-                          id={`reply-file-upload-${inquiry.id}`}
-                        />
-                        <label 
-                          htmlFor={`reply-file-upload-${inquiry.id}`}
-                          style={{
-                            cursor: 'pointer',
-                            display: 'inline-block',
-                            padding: '8px 16px',
-                            backgroundColor: fileUploadLoading ? '#6c757d' : '#28a745',
-                            color: 'white',
-                            borderRadius: '5px',
-                            fontSize: '0.9rem',
-                            fontWeight: '600'
-                          }}
-                        >
-                          {fileUploadLoading ? '업로드 중...' : '파일 선택'}
-                        </label>
-                        <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6c757d' }}>
-                          답변에 첨부할 이미지를 선택하세요
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <ReplyActions>
-                      <ReplyButton
-                        onClick={() => handleReply(inquiry.id)}
-                        disabled={actionLoading === inquiry.id}
-                      >
-                        답변 등록
-                      </ReplyButton>
-                      <CancelButton onClick={() => {
-                        setSelectedInquiry(null);
-                        setReplyText('');
-                      }}>
-                        취소
-                      </CancelButton>
-                    </ReplyActions>
-                  </ReplySection>
+  <ActionButton
+    onClick={(e) => {
+      e.stopPropagation(); // 상세보기 막기
+      handleStatusChange(inquiry.id, 'CLOSED');
+    }}
+    disabled={actionLoading === inquiry.id}
+  >
+    종료
+  </ActionButton>
+</ActionButtons>
+
+{selectedInquiry === inquiry.id && (
+  <ReplySection onClick={(e) => e.stopPropagation()}>
+    <ReplyTextarea
+      placeholder="답변 내용을 입력하세요..."
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      rows={4}
+    />
+
+    {/* 답변용 파일 업로드 */}
+    <div style={{ marginBottom: '15px' }}>
+      <label style={{ 
+        display: 'block', 
+        marginBottom: '8px', 
+        fontWeight: '600', 
+        color: '#495057' 
+      }}>
+        답변 첨부 파일:
+      </label>
+      <div style={{ 
+        border: '2px dashed #ced4da', 
+        borderRadius: '6px', 
+        padding: '15px', 
+        textAlign: 'center',
+        backgroundColor: '#f8f9fa'
+      }}>
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => handleFileUpload(e.target.files)}
+          disabled={fileUploadLoading}
+          style={{ display: 'none' }}
+          id={`reply-file-upload-${inquiry.id}`}
+        />
+        <label 
+          htmlFor={`reply-file-upload-${inquiry.id}`}
+          style={{
+            cursor: 'pointer',
+            display: 'inline-block',
+            padding: '8px 16px',
+            backgroundColor: fileUploadLoading ? '#6c757d' : '#28a745',
+            color: 'white',
+            borderRadius: '5px',
+            fontSize: '0.9rem',
+            fontWeight: '600'
+          }}
+        >
+          {fileUploadLoading ? '업로드 중...' : '파일 선택'}
+        </label>
+        <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6c757d' }}>
+          답변에 첨부할 이미지를 선택하세요
+        </p>
+      </div>
+    </div>
+    
+    <ReplyActions>
+      <ReplyButton
+        onClick={(e) => {
+          e.stopPropagation(); // 상세보기 막기
+          handleReply(inquiry.id);
+        }}
+        disabled={actionLoading === inquiry.id}
+      >
+        답변 등록
+      </ReplyButton>
+      <CancelButton
+        onClick={(e) => {
+          e.stopPropagation(); // 상세보기 막기
+          setSelectedInquiry(null);
+          setReplyText('');
+        }}
+      >
+        취소
+      </CancelButton>
+    </ReplyActions>
+  </ReplySection>
                 )}
               </InquiryCard>
             ))}
