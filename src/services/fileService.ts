@@ -73,6 +73,6 @@ export const deleteFile = async (fileId: string): Promise<FileDeleteResponse> =>
 
 // 파일 다운로드 URL 생성 (필요시)
 export const getFileDownloadUrl = (fileId: string): string => {
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
   return `${API_BASE_URL}/api/image/download/${fileId}`;
 };

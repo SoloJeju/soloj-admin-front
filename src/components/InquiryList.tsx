@@ -406,18 +406,26 @@ const InquiryList: React.FC = () => {
 
                 <ActionButtons>
                   <ActionButton
-                    onClick={() => setSelectedInquiry(inquiry.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // 상세보기 카드 onClick 막기
+                      setSelectedInquiry(inquiry.id);
+                    }}
                     disabled={actionLoading === inquiry.id}
                   >
                     답변하기
                   </ActionButton>
+
                   
-                  <ActionButton
-                    onClick={() => handleStatusChange(inquiry.id, 'IN_PROGRESS')}
-                    disabled={actionLoading === inquiry.id}
-                  >
-                    처리중으로 변경
-                  </ActionButton>
+                    <ActionButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(inquiry.id, 'IN_PROGRESS');
+                      }}
+                      disabled={actionLoading === inquiry.id}
+                    >
+                      처리중으로 변경
+                    </ActionButton>
+
                   
                   <ActionButton
                     onClick={() => handlePriorityChange(inquiry.id, 'HIGH')}
