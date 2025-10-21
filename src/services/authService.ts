@@ -17,7 +17,7 @@ export interface LoginResponse {
 
 // 관리자 로그인
 export const adminLogin = async (credentials: LoginRequest): Promise<LoginResponse> => {
-  return apiPost('/auth/login', credentials);
+  return apiPost('/admin/auth/login', credentials);
 };
 
 // 로그아웃 (필요시)

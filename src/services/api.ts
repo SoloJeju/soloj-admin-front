@@ -49,7 +49,7 @@ export const apiCall = async (
       const errorData = await response.json().catch(() => ({}));
       
       // 로그인 요청 시에는 401 에러를 무시 (토큰이 없어서 발생하는 정상적인 상황)
-      if (response.status === 401 && endpoint === '/auth/login') {
+      if (response.status === 401 && endpoint === '/admin/auth/login') {
         throw new Error(errorData.message || `로그인 실패: ${response.status}`);
       }
       
