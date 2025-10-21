@@ -29,9 +29,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       if (data && data.result && data.result.accessToken) {
         // JWT 토큰에서 정보 추출
         const token = data.result.accessToken;
-        const tokenInfo = JSON.parse(atob(token.split('.')[1]));
-        
-        // 관리자 정보 구성
+        const pureToken = token.startsWith("Bearer ") ? token.replace("Bearer ", "") : token;
+
+        // ✅ 토큰 형식 확인 추가
+        const parts = pureToken.split('.');
+        if (parts.length !== 3) {
+          setError('서버로부터 잘못된 토큰 형식이 반환되었습니다.');
+          return;
+        }
+
+        // ✅ JWT 파싱
+        const tokenInfo = JSON.parse(atob(parts[1]));
+                // 관리자 정보 구성
         const adminInfo = {
           id: tokenInfo.userId?.toString() || '',
           username: email,
