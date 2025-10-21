@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       setLoading(true);
       setError(null);
       
-      const data = await adminLogin({ email, password });
+      const data = await adminLogin({ username: email, password });
       
       if (data && data.result && data.result.accessToken) {
         // JWT 토큰에서 정보 추출
